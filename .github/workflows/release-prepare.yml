@@ -53,24 +53,34 @@ jobs:
           BUMP="${{ inputs.bump }}"
           PRERELEASE="${{ inputs.prerelease }}"
 
-          # Parse current version (strip any existing prerelease)
-          IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT%%-*}"
+          # Check if current version has a prerelease suffix
+          CURRENT_BASE="${CURRENT%%-*}"
+          CURRENT_PRERELEASE="${CURRENT#*-}"
+          if [ "$CURRENT_PRERELEASE" = "$CURRENT" ]; then
+            CURRENT_PRERELEASE=""
+          fi
 
-          # Bump version
-          case "$BUMP" in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
-          esac
+          # Parse base version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_BASE"
+
+          # Only bump if: no prerelease requested, OR current has no prerelease
+          # (i.e., don't bump when going from prerelease to prerelease)
+          if [ -z "$PRERELEASE" ] || [ -z "$CURRENT_PRERELEASE" ]; then
+            case "$BUMP" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+          fi
 
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
 
