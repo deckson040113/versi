@@ -1,0 +1,23 @@
+[package]
+name = "fnm-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fnm-core = { path = "../fnm-core" }
+fnm-shell = { path = "../fnm-shell" }
+fnm-platform = { path = "../fnm-platform" }
+
+iced = { version = "0.13", features = ["tokio"] }
+
+tray-icon = "0.19"
+dark-light = "2.0"
+
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+dirs.workspace = true
+open.workspace = true
+async-stream = "0.3"
