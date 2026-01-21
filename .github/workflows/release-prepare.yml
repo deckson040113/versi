@@ -157,7 +157,7 @@ jobs:
           git checkout -b "$BRANCH"
           git add Cargo.toml CHANGELOG.md
           git commit -m "chore: prepare release $TAG"
-          git push origin "$BRANCH"
+          git push --force origin "$BRANCH"
 
       - name: Create PR
         env:
