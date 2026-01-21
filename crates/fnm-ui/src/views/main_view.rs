@@ -1,6 +1,5 @@
 use iced::widget::{
-    button, column, container, horizontal_space, mouse_area, row, text, text_input,
-    Space,
+    button, column, container, horizontal_space, mouse_area, row, text, text_input, Space,
 };
 use iced::{Alignment, Element, Length};
 

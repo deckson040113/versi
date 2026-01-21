@@ -41,9 +41,7 @@ pub async fn check_for_update(current_version: &str) -> Option<AppUpdate> {
         .tag_name
         .strip_prefix('v')
         .unwrap_or(&release.tag_name);
-    let current = current_version
-        .strip_prefix('v')
-        .unwrap_or(current_version);
+    let current = current_version.strip_prefix('v').unwrap_or(current_version);
 
     if is_newer_version(latest, current) {
         Some(AppUpdate {
