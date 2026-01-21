@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 
+## [Unreleased]
+
+- chore: rebrand from fnm-ui to Versi
+  - Renamed all crates: fnm-ui → versi, fnm-core → versi-core, fnm-shell → versi-shell, fnm-platform → versi-platform
+  - Updated window titles, theme names, and onboarding text
+  - Updated settings directory from fnm-ui to versi
+  - Updated GitHub repository references to almeidx/versi
+  - Updated all release artifacts and installers
+
 ## [0.1.2-alpha.3] - 2026-01-21
 
 - fix: auto-detect FNM_DIR for GUI app bundles

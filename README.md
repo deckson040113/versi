@@ -1,8 +1,8 @@
-# fnm-ui
+# Versi
 
 A native GUI application for [fnm](https://github.com/Schniz/fnm) (Fast Node Manager).
 
-![fnm-ui screenshot](docs/screenshot.png)
+![Versi screenshot](docs/screenshot.png)
 
 ## Features
 
@@ -20,30 +20,30 @@ A native GUI application for [fnm](https://github.com/Schniz/fnm) (Fast Node Man
 
 ### Download Pre-built Binaries
 
-Download the latest release for your platform from the [Releases](https://github.com/almeidx/fnm-ui/releases) page.
+Download the latest release for your platform from the [Releases](https://github.com/almeidx/versi/releases) page.
 
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | `fnm-ui-macos-arm64.zip` |
-| macOS (Intel) | `fnm-ui-macos-x64.zip` |
-| Windows (x64) | `fnm-ui-windows-x64.msi` |
-| Linux (x64) | `fnm-ui-linux-x64.zip` |
-| Linux (ARM64) | `fnm-ui-linux-arm64.zip` |
+| macOS (Apple Silicon) | `versi-macos-arm64.zip` |
+| macOS (Intel) | `versi-macos-x64.zip` |
+| Windows (x64) | `versi-windows-x64.msi` |
+| Linux (x64) | `versi-linux-x64.zip` |
+| Linux (ARM64) | `versi-linux-arm64.zip` |
 
 ### macOS Installation
 
 1. Download the appropriate `.zip` file for your Mac
 2. Extract the zip file
-3. Drag `FNM UI.app` to your Applications folder
+3. Drag `Versi.app` to your Applications folder
 4. **Important**: On first launch, macOS may block the app because it's not signed. To fix this:
    ```bash
-   xattr -cr "/Applications/FNM UI.app"
+   xattr -cr "/Applications/Versi.app"
    ```
    Or right-click the app and select "Open" to bypass Gatekeeper.
 
 ### Windows Installation
 
-1. Download `fnm-ui-windows-x64.msi`
+1. Download `versi-windows-x64.msi`
 2. Double-click to run the installer
 3. The app will be available in your Start Menu
 
@@ -52,15 +52,15 @@ Download the latest release for your platform from the [Releases](https://github
 1. Download the appropriate `.zip` file
 2. Extract the archive:
    ```bash
-   unzip fnm-ui-linux-x64.zip
+   unzip versi-linux-x64.zip
    ```
 3. Move the binary to a location in your PATH:
    ```bash
-   sudo mv fnm-ui /usr/local/bin/
+   sudo mv versi /usr/local/bin/
    ```
 4. (Optional) Install the desktop entry for application launchers:
    ```bash
-   mv fnm-ui.desktop ~/.local/share/applications/
+   mv versi.desktop ~/.local/share/applications/
    ```
 
 ### Build from Source
@@ -74,13 +74,13 @@ Download the latest release for your platform from the [Releases](https://github
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/fnm-ui.git
-cd fnm-ui
+git clone https://github.com/almeidx/versi.git
+cd versi
 
 # Build in release mode
 cargo build --release
 
-# The binary will be at target/release/fnm-ui
+# The binary will be at target/release/versi
 ```
 
 ## Usage
@@ -104,12 +104,12 @@ cargo build --release
 ### Project Structure
 
 ```
-fnm-ui/
+versi/
 ├── crates/
-│   ├── fnm-ui/        # Main GUI application
-│   ├── fnm-core/      # fnm CLI wrapper library
-│   ├── fnm-shell/     # Shell detection & configuration
-│   └── fnm-platform/  # Platform abstractions
+│   ├── versi/          # Main GUI application
+│   ├── versi-core/     # fnm CLI wrapper library
+│   ├── versi-shell/    # Shell detection & configuration
+│   └── versi-platform/ # Platform abstractions
 ```
 
 ### Commands
@@ -136,7 +136,7 @@ The application uses [Iced](https://iced.rs/) with the Elm architecture:
 - **Update**: Logic to handle messages and produce side effects
 - **View**: Pure functions rendering state to UI
 
-See [AGENTS.md](AGENTS.md) for detailed development documentation.
+See [CLAUDE.md](CLAUDE.md) for detailed development documentation.
 
 ## Requirements
 

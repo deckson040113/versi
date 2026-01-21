@@ -1132,61 +1132,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fnm-core"
-version = "0.1.2-alpha.3"
-dependencies = [
- "chrono",
- "dirs",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "which",
-]
-
-[[package]]
-name = "fnm-platform"
-version = "0.1.2-alpha.3"
-dependencies = [
- "dirs",
- "serde",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "fnm-shell"
-version = "0.1.2-alpha.3"
-dependencies = [
- "dirs",
- "regex",
- "serde",
- "thiserror 2.0.18",
- "tokio",
- "which",
-]
-
-[[package]]
-name = "fnm-ui"
-version = "0.1.2-alpha.3"
-dependencies = [
- "async-stream",
- "chrono",
- "dark-light",
- "dirs",
- "fnm-core",
- "fnm-platform",
- "fnm-shell",
- "iced",
- "open",
- "serde",
- "serde_json",
- "tokio",
- "tray-icon",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4758,6 +4703,74 @@ name = "value-bag"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ba6f5989077681266825251a52748b8c1d8a4ad098cc37e440103d0ea717fc0"
+
+[[package]]
+name = "versi"
+version = "0.1.2-alpha.3"
+dependencies = [
+ "async-stream",
+ "chrono",
+ "dark-light",
+ "dirs",
+ "iced",
+ "open",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tray-icon",
+ "versi-core",
+ "versi-platform",
+ "versi-shell",
+]
+
+[[package]]
+name = "versi-backend"
+version = "0.1.2-alpha.3"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "versi-core"
+version = "0.1.2-alpha.3"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "dirs",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "versi-backend",
+ "which",
+]
+
+[[package]]
+name = "versi-platform"
+version = "0.1.2-alpha.3"
+dependencies = [
+ "dirs",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "versi-shell"
+version = "0.1.2-alpha.3"
+dependencies = [
+ "dirs",
+ "regex",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
+ "which",
+]
 
 [[package]]
 name = "version-compare"

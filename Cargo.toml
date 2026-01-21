@@ -1,17 +1,18 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/fnm-ui",
-    "crates/fnm-core",
-    "crates/fnm-shell",
-    "crates/fnm-platform",
+    "crates/versi",
+    "crates/versi-backend",
+    "crates/versi-core",
+    "crates/versi-shell",
+    "crates/versi-platform",
 ]
 
 [workspace.package]
 version = "0.1.2-alpha.3"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/user/fnm-ui"
+repository = "https://github.com/almeidx/versi"
 
 [workspace.dependencies]
 tokio = { version = "1.49.0", features = ["full"] }
@@ -23,3 +24,4 @@ dirs = "6.0"
 which = "8.0.0"
 reqwest = { version = "0.13.1", features = ["json"] }
 open = "5.3.3"
+async-trait = "0.1"

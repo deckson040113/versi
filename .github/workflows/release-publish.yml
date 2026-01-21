@@ -74,30 +74,30 @@ jobs:
           mkdir -p dist
 
           # Create ARM64 .app bundle
-          mkdir -p "dist/arm64/FNM UI.app/Contents/MacOS"
-          mkdir -p "dist/arm64/FNM UI.app/Contents/Resources"
-          cp target/aarch64-apple-darwin/release/fnm-ui "dist/arm64/FNM UI.app/Contents/MacOS/"
-          sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/arm64/FNM UI.app/Contents/Info.plist"
-          cd dist/arm64 && zip -r ../fnm-ui-macos-arm64.zip "FNM UI.app" && cd -
+          mkdir -p "dist/arm64/Versi.app/Contents/MacOS"
+          mkdir -p "dist/arm64/Versi.app/Contents/Resources"
+          cp target/aarch64-apple-darwin/release/versi "dist/arm64/Versi.app/Contents/MacOS/"
+          sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/arm64/Versi.app/Contents/Info.plist"
+          cd dist/arm64 && zip -r ../versi-macos-arm64.zip "Versi.app" && cd -
 
           # Create x64 .app bundle
-          mkdir -p "dist/x64/FNM UI.app/Contents/MacOS"
-          mkdir -p "dist/x64/FNM UI.app/Contents/Resources"
-          cp target/x86_64-apple-darwin/release/fnm-ui "dist/x64/FNM UI.app/Contents/MacOS/"
-          sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/x64/FNM UI.app/Contents/Info.plist"
-          cd dist/x64 && zip -r ../fnm-ui-macos-x64.zip "FNM UI.app" && cd -
+          mkdir -p "dist/x64/Versi.app/Contents/MacOS"
+          mkdir -p "dist/x64/Versi.app/Contents/Resources"
+          cp target/x86_64-apple-darwin/release/versi "dist/x64/Versi.app/Contents/MacOS/"
+          sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/x64/Versi.app/Contents/Info.plist"
+          cd dist/x64 && zip -r ../versi-macos-x64.zip "Versi.app" && cd -
 
       - name: Upload ARM64 artifact
         uses: actions/upload-artifact@v6
         with:
-          name: fnm-ui-macos-arm64
-          path: dist/fnm-ui-macos-arm64.zip
+          name: versi-macos-arm64
+          path: dist/versi-macos-arm64.zip
 
       - name: Upload x64 artifact
         uses: actions/upload-artifact@v6
         with:
-          name: fnm-ui-macos-x64
-          path: dist/fnm-ui-macos-x64.zip
+          name: versi-macos-x64
+          path: dist/versi-macos-x64.zip
 
   build-linux-x64:
     name: Build Linux (x64)
@@ -127,15 +127,15 @@ jobs:
       - name: Prepare artifact
         run: |
           mkdir -p dist/pkg
-          cp target/x86_64-unknown-linux-gnu/release/fnm-ui dist/pkg/
-          cp assets/fnm-ui.desktop dist/pkg/
-          cd dist/pkg && zip ../fnm-ui-linux-x64.zip fnm-ui fnm-ui.desktop && cd -
+          cp target/x86_64-unknown-linux-gnu/release/versi dist/pkg/
+          cp assets/versi.desktop dist/pkg/
+          cd dist/pkg && zip ../versi-linux-x64.zip versi versi.desktop && cd -
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: fnm-ui-linux-x64
-          path: dist/fnm-ui-linux-x64.zip
+          name: versi-linux-x64
+          path: dist/versi-linux-x64.zip
 
   build-linux-arm64:
     name: Build Linux (ARM64)
@@ -165,15 +165,15 @@ jobs:
       - name: Prepare artifact
         run: |
           mkdir -p dist/pkg
-          cp target/aarch64-unknown-linux-gnu/release/fnm-ui dist/pkg/
-          cp assets/fnm-ui.desktop dist/pkg/
-          cd dist/pkg && zip ../fnm-ui-linux-arm64.zip fnm-ui fnm-ui.desktop && cd -
+          cp target/aarch64-unknown-linux-gnu/release/versi dist/pkg/
+          cp assets/versi.desktop dist/pkg/
+          cd dist/pkg && zip ../versi-linux-arm64.zip versi versi.desktop && cd -
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: fnm-ui-linux-arm64
-          path: dist/fnm-ui-linux-arm64.zip
+          name: versi-linux-arm64
+          path: dist/versi-linux-arm64.zip
 
   build-windows:
     name: Build Windows (x64)
@@ -202,13 +202,13 @@ jobs:
           dotnet tool install --global wix --version 4.0.5
           wix extension add WixToolset.UI.wixext/4.0.5
           mkdir dist
-          wix build wix/main.wxs -ext WixToolset.UI.wixext -o dist/fnm-ui-windows-x64.msi
+          wix build wix/main.wxs -ext WixToolset.UI.wixext -o dist/versi-windows-x64.msi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: fnm-ui-windows-x64
-          path: dist/fnm-ui-windows-x64.msi
+          name: versi-windows-x64
+          path: dist/versi-windows-x64.msi
 
   release:
     name: Create Release

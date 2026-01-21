@@ -1,8 +1,8 @@
-# AI Agent Instructions for fnm-ui
+# AI Agent Instructions for Versi
 
 ## Project Overview
 
-fnm-ui is a native GUI application for [fnm](https://github.com/Schniz/fnm) (Fast Node Manager). It provides a graphical interface to manage Node.js versions on your system.
+Versi is a native GUI application for [fnm](https://github.com/Schniz/fnm) (Fast Node Manager). It provides a graphical interface to manage Node.js versions on your system.
 
 ## Technology Stack
 
@@ -14,10 +14,10 @@ fnm-ui is a native GUI application for [fnm](https://github.com/Schniz/fnm) (Fas
 ## Project Structure
 
 ```
-fnm-ui/
+versi/
 ├── Cargo.toml                    # Workspace root
 ├── crates/
-│   ├── fnm-ui/                   # Main GUI application
+│   ├── versi/                    # Main GUI application
 │   │   └── src/
 │   │       ├── main.rs           # Entry point
 │   │       ├── app.rs            # Iced Application implementation
@@ -27,7 +27,7 @@ fnm-ui/
 │   │       ├── settings.rs       # User settings persistence
 │   │       ├── views/            # UI views (main_view, onboarding, loading)
 │   │       └── widgets/          # Custom widgets (version_list, install_modal, toast)
-│   ├── fnm-core/                 # fnm CLI wrapper library
+│   ├── versi-core/               # fnm CLI wrapper library
 │   │   └── src/
 │   │       ├── client.rs         # FnmClient - command execution
 │   │       ├── version.rs        # NodeVersion types & parsing
@@ -35,13 +35,13 @@ fnm-ui/
 │   │       ├── detection.rs      # fnm binary detection
 │   │       ├── schedule.rs       # Node.js release schedule fetching
 │   │       └── error.rs          # Error types
-│   ├── fnm-shell/                # Shell detection & configuration
+│   ├── versi-shell/              # Shell detection & configuration
 │   │   └── src/
 │   │       ├── detect.rs         # Shell detection
 │   │       ├── config.rs         # Config file editing
 │   │       ├── shells/           # Shell-specific implementations
 │   │       └── verify.rs         # Configuration verification
-│   └── fnm-platform/             # Platform abstractions
+│   └── versi-platform/           # Platform abstractions
 │       └── src/
 │           ├── paths.rs          # Platform-native paths
 │           └── environment.rs    # Environment abstraction
@@ -100,10 +100,10 @@ cargo clippy
 
 ## Key Files to Understand
 
-1. `crates/fnm-ui/src/app.rs` - Main application logic and message handling
-2. `crates/fnm-ui/src/state.rs` - All state types and their relationships
-3. `crates/fnm-ui/src/message.rs` - All possible application events
-4. `crates/fnm-core/src/client.rs` - fnm CLI interaction
+1. `crates/versi/src/app.rs` - Main application logic and message handling
+2. `crates/versi/src/state.rs` - All state types and their relationships
+3. `crates/versi/src/message.rs` - All possible application events
+4. `crates/versi-core/src/client.rs` - fnm CLI interaction
 
 ## Common Tasks
 
@@ -116,13 +116,13 @@ cargo clippy
 
 ### Adding a New fnm Command
 
-1. Add method to `FnmClient` in `fnm-core/src/client.rs`
+1. Add method to `FnmClient` in `versi-core/src/client.rs`
 2. Add any new types to `version.rs` if needed
-3. Create corresponding message and handler in fnm-ui
+3. Create corresponding message and handler in versi
 
 ### Modifying Styles
 
-- All styles are in `crates/fnm-ui/src/theme.rs`
+- All styles are in `crates/versi/src/theme.rs`
 - Light/dark palettes defined at the top
 - Button and container styles as functions
 
@@ -146,9 +146,9 @@ Key external crates:
 ## Data & Storage
 
 **Settings Location:**
-- macOS: `~/Library/Application Support/fnm-ui/`
-- Windows: `%APPDATA%/fnm-ui/`
-- Linux: `~/.config/fnm-ui/` (XDG-compliant)
+- macOS: `~/Library/Application Support/versi/`
+- Windows: `%APPDATA%/versi/`
+- Linux: `~/.config/versi/` (XDG-compliant)
 
 **Cached Data:**
 - Available Node versions list (fetched from nodejs.org)

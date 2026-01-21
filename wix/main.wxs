@@ -3,8 +3,8 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
     <Package
-        Name="FNM UI"
-        Manufacturer="FNM UI"
+        Name="Versi"
+        Manufacturer="Versi"
         Version="1.0.0"
         UpgradeCode="E8F9A1B2-C3D4-5E6F-7A8B-9C0D1E2F3A4B"
         Scope="perUser">
@@ -15,26 +15,26 @@
         <MediaTemplate EmbedCab="yes"/>
 
         <StandardDirectory Id="LocalAppDataFolder">
-            <Directory Id="INSTALLFOLDER" Name="FNM UI">
+            <Directory Id="INSTALLFOLDER" Name="Versi">
                 <Component Id="MainExecutable" Guid="*">
-                    <File Id="fnmui_exe" Source="target\x86_64-pc-windows-msvc\release\fnm-ui.exe"/>
+                    <File Id="versi_exe" Source="target\x86_64-pc-windows-msvc\release\versi.exe"/>
                 </Component>
             </Directory>
         </StandardDirectory>
 
         <StandardDirectory Id="ProgramMenuFolder">
-            <Directory Id="ApplicationProgramsFolder" Name="FNM UI">
+            <Directory Id="ApplicationProgramsFolder" Name="Versi">
                 <Component Id="StartMenuShortcut" Guid="*">
                     <Shortcut
                         Id="StartMenuShortcut"
-                        Name="FNM UI"
+                        Name="Versi"
                         Description="GUI for Fast Node Manager"
-                        Target="[INSTALLFOLDER]fnm-ui.exe"
+                        Target="[INSTALLFOLDER]versi.exe"
                         WorkingDirectory="INSTALLFOLDER"/>
                     <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall"/>
                     <RegistryValue
                         Root="HKCU"
-                        Key="Software\FNM UI"
+                        Key="Software\Versi"
                         Name="Installed"
                         Type="integer"
                         Value="1"

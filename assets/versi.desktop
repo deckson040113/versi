@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Versi
+Comment=GUI for Fast Node Manager
+Exec=versi
+Icon=versi
+Terminal=false
+Type=Application
+Categories=Development;
+Keywords=node;nodejs;nvm;fnm;version;manager;
