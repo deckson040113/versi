@@ -43,50 +43,10 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
-  build:
-    name: Build ${{ matrix.name }}
+  build-macos:
+    name: Build macOS (Universal)
     needs: tag
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS (Apple Silicon)
-            os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: fnm-ui-macos-arm64
-            binary: fnm-ui
-
-          - name: macOS (Intel)
-            os: macos-13
-            target: x86_64-apple-darwin
-            artifact: fnm-ui-macos-x64
-            binary: fnm-ui
-
-          - name: Windows (x64)
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: fnm-ui-windows-x64
-            binary: fnm-ui.exe
-
-          - name: Windows (ARM64)
-            os: windows-latest
-            target: aarch64-pc-windows-msvc
-            artifact: fnm-ui-windows-arm64
-            binary: fnm-ui.exe
-
-          - name: Linux (x64)
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: fnm-ui-linux-x64
-            binary: fnm-ui
-
-          - name: Linux (ARM64)
-            os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            artifact: fnm-ui-linux-arm64
-            binary: fnm-ui
-
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -95,44 +55,123 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxdo-dev libayatana-appindicator3-dev
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.target }}
+          key: macos-universal
 
-      - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: Build ARM64
+        run: cargo build --release --target aarch64-apple-darwin
 
-      - name: Prepare artifact (Unix)
-        if: runner.os != 'Windows'
+      - name: Build x64
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Prepare artifacts
         run: |
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/${{ matrix.binary }} dist/${{ matrix.artifact }}
+          cp target/aarch64-apple-darwin/release/fnm-ui dist/fnm-ui-macos-arm64
+          cp target/x86_64-apple-darwin/release/fnm-ui dist/fnm-ui-macos-x64
 
-      - name: Prepare artifact (Windows)
-        if: runner.os == 'Windows'
+      - name: Upload ARM64 artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: fnm-ui-macos-arm64
+          path: dist/fnm-ui-macos-arm64
+
+      - name: Upload x64 artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: fnm-ui-macos-x64
+          path: dist/fnm-ui-macos-x64
+
+  build-linux:
+    name: Build Linux
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxdo-dev libayatana-appindicator3-dev
+
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: linux
+
+      - name: Build x64 (native)
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Build ARM64 (cross)
+        run: cross build --release --target aarch64-unknown-linux-gnu
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-gnu/release/fnm-ui dist/fnm-ui-linux-x64
+          cp target/aarch64-unknown-linux-gnu/release/fnm-ui dist/fnm-ui-linux-arm64
+
+      - name: Upload x64 artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: fnm-ui-linux-x64
+          path: dist/fnm-ui-linux-x64
+
+      - name: Upload ARM64 artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: fnm-ui-linux-arm64
+          path: dist/fnm-ui-linux-arm64
+
+  build-windows:
+    name: Build Windows (x64)
+    needs: tag
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-x64
+
+      - name: Build
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Prepare artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist
-          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.binary }}" -Destination "dist/${{ matrix.artifact }}.exe"
+          Copy-Item "target/x86_64-pc-windows-msvc/release/fnm-ui.exe" -Destination "dist/fnm-ui-windows-x64.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.artifact }}
-          path: dist/${{ matrix.artifact }}*
+          name: fnm-ui-windows-x64
+          path: dist/fnm-ui-windows-x64.exe
 
   release:
     name: Create Release
-    needs: [tag, build]
+    needs: [tag, build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
