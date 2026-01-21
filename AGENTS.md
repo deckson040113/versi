@@ -196,7 +196,6 @@ Key external crates:
 
 These features are planned but not yet built:
 - System tray with quick-switch menu
-- Project-level .nvmrc/.node-version file integration
 - fnm update checking and in-app update
 - App update checking
 - Parallel install operations

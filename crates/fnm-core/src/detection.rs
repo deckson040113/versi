@@ -118,7 +118,7 @@ pub async fn install_fnm() -> Result<(), crate::FnmError> {
     }
 }
 
-pub async fn check_fnm_update(current_version: &str) -> Option<String> {
+pub async fn _check_fnm_update(current_version: &str) -> Option<String> {
     let output = Command::new("curl")
         .args([
             "-fsSL",
