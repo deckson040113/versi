@@ -77,6 +77,7 @@ jobs:
           mkdir -p "dist/arm64/Versi.app/Contents/MacOS"
           mkdir -p "dist/arm64/Versi.app/Contents/Resources"
           cp target/aarch64-apple-darwin/release/versi "dist/arm64/Versi.app/Contents/MacOS/"
+          cp assets/AppIcon.icns "dist/arm64/Versi.app/Contents/Resources/"
           sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/arm64/Versi.app/Contents/Info.plist"
           cd dist/arm64 && zip -r "../versi-${VERSION}-macos-arm64.zip" "Versi.app" && cd -
 
@@ -84,6 +85,7 @@ jobs:
           mkdir -p "dist/x64/Versi.app/Contents/MacOS"
           mkdir -p "dist/x64/Versi.app/Contents/Resources"
           cp target/x86_64-apple-darwin/release/versi "dist/x64/Versi.app/Contents/MacOS/"
+          cp assets/AppIcon.icns "dist/x64/Versi.app/Contents/Resources/"
           sed "s/VERSION_PLACEHOLDER/$VERSION/g" assets/Info.plist > "dist/x64/Versi.app/Contents/Info.plist"
           cd dist/x64 && zip -r "../versi-${VERSION}-macos-x64.zip" "Versi.app" && cd -
 
@@ -130,7 +132,8 @@ jobs:
           mkdir -p dist/pkg
           cp target/x86_64-unknown-linux-gnu/release/versi dist/pkg/
           cp assets/versi.desktop dist/pkg/
-          cd dist/pkg && zip "../versi-${VERSION}-linux-x64.zip" versi versi.desktop && cd -
+          cp assets/logo.png dist/pkg/versi.png
+          cd dist/pkg && zip "../versi-${VERSION}-linux-x64.zip" versi versi.desktop versi.png && cd -
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
@@ -169,7 +172,8 @@ jobs:
           mkdir -p dist/pkg
           cp target/aarch64-unknown-linux-gnu/release/versi dist/pkg/
           cp assets/versi.desktop dist/pkg/
-          cd dist/pkg && zip "../versi-${VERSION}-linux-arm64.zip" versi versi.desktop && cd -
+          cp assets/logo.png dist/pkg/versi.png
+          cd dist/pkg && zip "../versi-${VERSION}-linux-arm64.zip" versi versi.desktop versi.png && cd -
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

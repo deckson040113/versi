@@ -2,19 +2,17 @@
 
 A native GUI application for [fnm](https://github.com/Schniz/fnm) (Fast Node Manager).
 
-![Versi screenshot](docs/screenshot.png)
+![Versi screenshot](assets/screenshot.png)
 
 ## Features
 
 - View and manage installed Node.js versions
-- Install new Node.js versions with one click
+- Install/uninstall Node.js versions
 - Set default Node.js version
-- Uninstall versions with undo support
-- Update available indicators for each major version
-- Search and filter versions
+- Check for updates and install them
 - Light and dark theme support (follows system preference)
 - Shell configuration detection and setup
-- Onboarding wizard for first-time setup
+- Search and filter versions
 
 ## Installation
 

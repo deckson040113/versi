@@ -30,7 +30,9 @@
                         Name="Versi"
                         Description="GUI for Fast Node Manager"
                         Target="[INSTALLFOLDER]versi.exe"
-                        WorkingDirectory="INSTALLFOLDER"/>
+                        WorkingDirectory="INSTALLFOLDER"
+                        Icon="AppIcon.ico"/>
+                    <Icon Id="AppIcon.ico" SourceFile="assets\icon.ico"/>
                     <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall"/>
                     <RegistryValue
                         Root="HKCU"
