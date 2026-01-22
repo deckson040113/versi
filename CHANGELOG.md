@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.2-alpha.6] - 2026-01-22
 
+- fix(wix): move Icon element to Package level
 - fix: use cargo generate-lockfile instead of cargo check
 - fix: misc release and UI improvements
 - feat: add app icon for all platforms
