@@ -208,6 +208,7 @@ jobs:
           $VERSION = "${{ needs.tag.outputs.version }}"
           dotnet tool install --global wix --version 4.0.5
           wix extension add WixToolset.UI.wixext/4.0.5
+          (Get-Content wix/main.wxs) -replace 'VERSION_PLACEHOLDER', $VERSION | Set-Content wix/main.wxs
           mkdir dist
           wix build wix/main.wxs -ext WixToolset.UI.wixext -o "dist/versi-${VERSION}-windows-x64.msi"
 

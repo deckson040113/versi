@@ -30,11 +30,15 @@ pub fn dark_theme() -> Theme {
 }
 
 pub fn get_system_theme() -> Theme {
-    match dark_light::detect() {
-        Ok(dark_light::Mode::Dark) => dark_theme(),
-        Ok(dark_light::Mode::Light) | Ok(dark_light::Mode::Unspecified) => light_theme(),
-        Err(_) => light_theme(),
+    if is_system_dark() {
+        dark_theme()
+    } else {
+        light_theme()
     }
+}
+
+pub fn is_system_dark() -> bool {
+    matches!(dark_light::detect(), Ok(dark_light::Mode::Dark))
 }
 
 pub mod styles {

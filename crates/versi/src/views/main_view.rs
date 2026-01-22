@@ -4,7 +4,7 @@ use iced::{Alignment, Element, Length};
 use crate::message::Message;
 use crate::settings::AppSettings;
 use crate::state::{MainState, Modal, Operation, SettingsModalState, ShellVerificationStatus};
-use crate::theme::styles;
+use crate::theme::{is_system_dark, styles};
 use crate::widgets::{install_modal, toast_container, version_list};
 
 pub fn view<'a>(state: &'a MainState, settings: &'a AppSettings) -> Element<'a, Message> {
@@ -208,10 +208,17 @@ fn settings_modal_view<'a>(
         text("Appearance").size(13),
         Space::new().height(8),
         row![
-            button(text("System").size(13))
-                .on_press(Message::ThemeChanged(crate::settings::ThemeSetting::System))
-                .style(styles::secondary_button)
-                .padding([10, 16]),
+            button(
+                text(if is_system_dark() {
+                    "System (Dark)"
+                } else {
+                    "System (Light)"
+                })
+                .size(13),
+            )
+            .on_press(Message::ThemeChanged(crate::settings::ThemeSetting::System))
+            .style(styles::secondary_button)
+            .padding([10, 16]),
             button(text("Light").size(13))
                 .on_press(Message::ThemeChanged(crate::settings::ThemeSetting::Light))
                 .style(styles::secondary_button)

@@ -5,7 +5,7 @@
     <Package
         Name="Versi"
         Manufacturer="Versi"
-        Version="1.0.0"
+        Version="VERSION_PLACEHOLDER"
         UpgradeCode="E8F9A1B2-C3D4-5E6F-7A8B-9C0D1E2F3A4B"
         Scope="perUser">
 

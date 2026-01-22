@@ -159,14 +159,20 @@ jobs:
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
           echo "Updated Cargo.toml to version $NEW_VERSION"
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Update Cargo.lock
+        run: cargo check
+
       - name: Create release branch and push
         run: |
           TAG="${{ steps.bump.outputs.tag }}"
           BRANCH="${{ steps.bump.outputs.branch }}"
 
           git checkout -b "$BRANCH"
-          git add Cargo.toml CHANGELOG.md
-          git commit -m "chore: prepare release $TAG"
+          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git commit -m "chore: release $TAG"
           git push --force origin "$BRANCH"
 
       - name: Create PR
