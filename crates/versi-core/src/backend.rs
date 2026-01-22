@@ -90,9 +90,14 @@ impl FnmBackend {
             }
             Environment::Wsl { distro } => {
                 let mut cmd = Command::new("wsl.exe");
-                // Run through bash login shell to ensure fnm is in PATH
-                let fnm_command = format!("fnm {}", args.join(" "));
-                cmd.args(["-d", distro, "--", "bash", "-lc", &fnm_command]);
+                // Source common shell config files to ensure fnm is in PATH,
+                // then run the fnm command
+                let fnm_args = args.join(" ");
+                let shell_cmd = format!(
+                    "source ~/.profile 2>/dev/null; source ~/.bashrc 2>/dev/null; fnm {}",
+                    fnm_args
+                );
+                cmd.args(["-d", distro, "--", "bash", "-c", &shell_cmd]);
                 cmd.hide_window();
                 cmd
             }
