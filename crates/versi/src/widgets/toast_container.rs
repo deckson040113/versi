@@ -17,12 +17,24 @@ pub fn view<'a>(content: Element<'a, Message>, toasts: &'a [Toast]) -> Element<'
         .width(Length::Shrink);
 
     let toast_layer = container(toast_column)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .style(|_theme| container::Style {
+            background: None,
+            ..Default::default()
+        });
+
+    let positioned_toasts = container(toast_layer)
         .width(Length::Fill)
         .height(Length::Fill)
         .align_x(iced::alignment::Horizontal::Right)
-        .align_y(iced::alignment::Vertical::Bottom);
+        .align_y(iced::alignment::Vertical::Bottom)
+        .style(|_theme| container::Style {
+            background: None,
+            ..Default::default()
+        });
 
-    iced::widget::stack![content, toast_layer].into()
+    iced::widget::stack![content, positioned_toasts].into()
 }
 
 fn toast_view<'a>(toast: &'a Toast) -> Element<'a, Message> {
