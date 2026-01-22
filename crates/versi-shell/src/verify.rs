@@ -30,13 +30,7 @@ pub async fn verify_shell_config(shell_type: &ShellType) -> VerificationResult {
             }
             Err(e) => VerificationResult::Error(e.to_string()),
         },
-        None => {
-            if functional_test(shell_type).await {
-                VerificationResult::FunctionalButNotInConfig
-            } else {
-                VerificationResult::ConfigFileNotFound
-            }
-        }
+        None => VerificationResult::ConfigFileNotFound,
     }
 }
 

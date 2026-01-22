@@ -162,18 +162,19 @@ impl FnmUi {
             Message::ShellOptionUseOnCdToggled(value) => {
                 self.settings.shell_options.use_on_cd = value;
                 let _ = self.settings.save();
-                Task::none()
+                self.update_shell_flags()
             }
             Message::ShellOptionResolveEnginesToggled(value) => {
                 self.settings.shell_options.resolve_engines = value;
                 let _ = self.settings.save();
-                Task::none()
+                self.update_shell_flags()
             }
             Message::ShellOptionCorepackEnabledToggled(value) => {
                 self.settings.shell_options.corepack_enabled = value;
                 let _ = self.settings.save();
-                Task::none()
+                self.update_shell_flags()
             }
+            Message::ShellFlagsUpdated(_) => Task::none(),
             Message::CheckShellSetup => self.handle_check_shell_setup(),
             Message::ShellSetupChecked(results) => {
                 self.handle_shell_setup_checked(results);
@@ -952,7 +953,7 @@ impl FnmUi {
                                 ShellVerificationStatus::NotConfigured
                             }
                             versi_shell::VerificationResult::ConfigFileNotFound => {
-                                ShellVerificationStatus::NotConfigured
+                                ShellVerificationStatus::NoConfigFile
                             }
                             versi_shell::VerificationResult::FunctionalButNotInConfig => {
                                 ShellVerificationStatus::FunctionalButNotInConfig
@@ -1034,6 +1035,42 @@ impl FnmUi {
                 }
             }
         }
+    }
+
+    fn update_shell_flags(&self) -> Task<Message> {
+        let shell_options = versi_shell::FnmShellOptions {
+            use_on_cd: self.settings.shell_options.use_on_cd,
+            resolve_engines: self.settings.shell_options.resolve_engines,
+            corepack_enabled: self.settings.shell_options.corepack_enabled,
+        };
+
+        Task::perform(
+            async move {
+                use versi_shell::ShellConfig;
+
+                let shells = detect_shells();
+                let mut updated_count = 0;
+
+                for shell in shells {
+                    if let Some(config_path) = shell.config_file {
+                        if let Ok(mut config) =
+                            ShellConfig::load(shell.shell_type.clone(), config_path)
+                        {
+                            if config.has_fnm_init() {
+                                let edit = config.update_fnm_flags(&shell_options);
+                                if edit.has_changes() {
+                                    config.apply_edit(&edit).map_err(|e| e.to_string())?;
+                                    updated_count += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Ok::<_, String>(updated_count)
+            },
+            Message::ShellFlagsUpdated,
+        )
     }
 
     fn handle_check_for_app_update(&mut self) -> Task<Message> {

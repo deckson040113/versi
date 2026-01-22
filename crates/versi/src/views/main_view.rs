@@ -254,6 +254,7 @@ fn settings_modal_view<'a>(
                 ShellVerificationStatus::Unknown => "Unknown",
                 ShellVerificationStatus::Configured => "Configured ✓",
                 ShellVerificationStatus::NotConfigured => "Not configured",
+                ShellVerificationStatus::NoConfigFile => "No config file",
                 ShellVerificationStatus::FunctionalButNotInConfig => "Working (not in config)",
                 ShellVerificationStatus::Error(_) => "Error",
             };
@@ -263,6 +264,8 @@ fn settings_modal_view<'a>(
                 ShellVerificationStatus::Configured
                     | ShellVerificationStatus::FunctionalButNotInConfig
             );
+
+            let has_no_config_file = matches!(shell.status, ShellVerificationStatus::NoConfigFile);
 
             let shell_row = if shell.configuring {
                 row![
@@ -275,6 +278,13 @@ fn settings_modal_view<'a>(
                     text(status_text)
                         .size(12)
                         .color(iced::Color::from_rgb8(52, 199, 89)),
+                ]
+            } else if has_no_config_file {
+                row![
+                    text(&shell.shell_name).size(13).width(Length::Fixed(100.0)),
+                    text(status_text)
+                        .size(12)
+                        .color(iced::Color::from_rgb8(142, 142, 147)),
                 ]
             } else {
                 let shell_type = shell.shell_type.clone();

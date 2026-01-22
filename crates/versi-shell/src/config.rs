@@ -37,16 +37,7 @@ impl ShellConfig {
     }
 
     pub fn has_fnm_init(&self) -> bool {
-        let init_patterns = [
-            "fnm env",
-            "eval \"$(fnm",
-            "fnm env --use-on-cd",
-            "Invoke-Expression",
-        ];
-
-        init_patterns
-            .iter()
-            .any(|pattern| self.content.contains(pattern))
+        self.content.contains("fnm env")
     }
 
     pub fn detect_fnm_options(&self) -> Option<FnmShellOptions> {
@@ -65,20 +56,10 @@ impl ShellConfig {
         let init_command = self.shell_type.fnm_init_command(options);
 
         if self.has_fnm_init() {
-            return ShellConfigEdit {
-                original: self.content.clone(),
-                modified: self.content.clone(),
-                changes: Vec::new(),
-            };
+            return self.update_fnm_flags(options);
         }
 
-        let comment = match self.shell_type {
-            ShellType::Fish => "# fnm (Fast Node Manager)",
-            ShellType::PowerShell => "# fnm (Fast Node Manager)",
-            _ => "# fnm (Fast Node Manager)",
-        };
-
-        let addition = format!("\n{}\n{}\n", comment, init_command);
+        let addition = format!("\n# fnm (Fast Node Manager)\n{}\n", init_command);
         let modified = format!("{}{}", self.content, addition);
 
         ShellConfigEdit {
@@ -99,9 +80,7 @@ impl ShellConfig {
         Ok(())
     }
 
-    pub fn update_fnm_init(&mut self, options: &FnmShellOptions) -> ShellConfigEdit {
-        let new_init_command = self.shell_type.fnm_init_command(options);
-
+    pub fn update_fnm_flags(&mut self, options: &FnmShellOptions) -> ShellConfigEdit {
         if !self.has_fnm_init() {
             return self.add_fnm_init(options);
         }
@@ -109,25 +88,21 @@ impl ShellConfig {
         let mut modified = self.content.clone();
         let mut changes = Vec::new();
 
-        // Pattern to match fnm env commands with various flag combinations
-        // Matches: eval "$(fnm env ...)" or eval "`fnm env ...`" or fnm env ... | source
-        let patterns = [
-            r#"eval "\$\(fnm env[^)]*\)""#,
-            r#"eval "`fnm env[^`]*`""#,
-            r"fnm env[^\n]*\| source",
-            r"fnm env[^\n]*\| Out-String \| Invoke-Expression",
+        let flags = [
+            ("--use-on-cd", options.use_on_cd),
+            ("--resolve-engines", options.resolve_engines),
+            ("--corepack-enabled", options.corepack_enabled),
         ];
 
-        for pattern in patterns {
-            if let Ok(re) = regex::Regex::new(pattern) {
-                if re.is_match(&modified) {
-                    modified = re.replace(&modified, new_init_command.as_str()).to_string();
-                    changes.push(format!(
-                        "Updated fnm initialization to: {}",
-                        new_init_command
-                    ));
-                    break;
-                }
+        for (flag, enabled) in flags {
+            let has_flag = modified.contains(flag);
+
+            if enabled && !has_flag {
+                modified = Self::add_flag_to_fnm_env(&modified, flag);
+                changes.push(format!("Added {}", flag));
+            } else if !enabled && has_flag {
+                modified = Self::remove_flag_from_fnm_env(&modified, flag);
+                changes.push(format!("Removed {}", flag));
             }
         }
 
@@ -136,6 +111,43 @@ impl ShellConfig {
             modified,
             changes,
         }
+    }
+
+    fn add_flag_to_fnm_env(content: &str, flag: &str) -> String {
+        let mut result = String::new();
+        for line in content.lines() {
+            if line.contains("fnm env") && !line.contains(flag) {
+                let modified_line = line.replacen("fnm env", &format!("fnm env {}", flag), 1);
+                result.push_str(&modified_line);
+            } else {
+                result.push_str(line);
+            }
+            result.push('\n');
+        }
+        if !content.ends_with('\n') && result.ends_with('\n') {
+            result.pop();
+        }
+        result
+    }
+
+    fn remove_flag_from_fnm_env(content: &str, flag: &str) -> String {
+        let mut result = String::new();
+        for line in content.lines() {
+            if line.contains("fnm env") && line.contains(flag) {
+                let modified_line = line
+                    .replace(&format!("{} ", flag), "")
+                    .replace(&format!(" {}", flag), "")
+                    .replace(flag, "");
+                result.push_str(&modified_line);
+            } else {
+                result.push_str(line);
+            }
+            result.push('\n');
+        }
+        if !content.ends_with('\n') && result.ends_with('\n') {
+            result.pop();
+        }
+        result
     }
 }
 

@@ -314,6 +314,7 @@ pub enum ShellVerificationStatus {
     Unknown,
     Configured,
     NotConfigured,
+    NoConfigFile,
     FunctionalButNotInConfig,
     Error(String),
 }

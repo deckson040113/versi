@@ -166,6 +166,12 @@ fn configure_shell_step<'a>(state: &'a OnboardingState) -> Element<'a, Message> 
                 container(text("Configuring...").size(14))
             } else if let Some(error) = &shell.error {
                 container(text(format!("Error: {}", error)).size(14))
+            } else if shell.config_path.is_none() {
+                container(
+                    text("No config file")
+                        .size(14)
+                        .color(iced::Color::from_rgb8(142, 142, 147)),
+                )
             } else {
                 container(
                     button(text("Configure").size(14))

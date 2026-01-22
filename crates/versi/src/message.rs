@@ -80,6 +80,7 @@ pub enum Message {
     ShellSetupChecked(Vec<(ShellType, versi_shell::VerificationResult)>),
     ConfigureShell(ShellType),
     ShellConfigured(ShellType, Result<(), String>),
+    ShellFlagsUpdated(Result<usize, String>),
 
     OnboardingNext,
     OnboardingBack,
