@@ -7,6 +7,9 @@ use versi_core::{
 use versi_platform::EnvironmentId;
 use versi_shell::ShellType;
 
+use crate::settings::TrayBehavior;
+use crate::tray::TrayMessage;
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Message {
@@ -100,6 +103,12 @@ pub enum Message {
 
     Tick,
     WindowEvent(iced::window::Event),
+    CloseWindow,
+
+    TrayEvent(TrayMessage),
+    TrayBehaviorChanged(TrayBehavior),
+    StartMinimizedToggled(bool),
+    WindowOpened(iced::window::Id),
 
     CheckForAppUpdate,
     AppUpdateChecked(Option<AppUpdate>),

@@ -5355,6 +5355,7 @@ dependencies = [
  "dark-light",
  "dirs",
  "iced",
+ "image",
  "log",
  "open",
  "serde",

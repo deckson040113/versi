@@ -1,0 +1,190 @@
+use std::cell::RefCell;
+
+use iced::Subscription;
+use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem};
+use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
+
+use crate::message::Message;
+use crate::settings::TrayBehavior;
+use crate::state::EnvironmentState;
+
+thread_local! {
+    static TRAY_ICON: RefCell<Option<TrayIcon>> = const { RefCell::new(None) };
+}
+
+#[derive(Debug, Clone)]
+pub enum TrayMessage {
+    ShowWindow,
+    Quit,
+    SetDefault { env_index: usize, version: String },
+}
+
+pub struct TrayMenuData {
+    pub environments: Vec<EnvironmentData>,
+}
+
+pub struct EnvironmentData {
+    pub name: String,
+    pub versions: Vec<VersionData>,
+}
+
+pub struct VersionData {
+    pub version: String,
+    pub is_default: bool,
+}
+
+impl TrayMenuData {
+    pub fn from_environments(environments: &[EnvironmentState]) -> Self {
+        Self {
+            environments: environments
+                .iter()
+                .map(|env| EnvironmentData {
+                    name: env.name.clone(),
+                    versions: env
+                        .installed_versions
+                        .iter()
+                        .map(|v| VersionData {
+                            version: v.version.to_string(),
+                            is_default: v.is_default,
+                        })
+                        .collect(),
+                })
+                .collect(),
+        }
+    }
+}
+
+pub fn init_tray(behavior: &TrayBehavior) -> Result<(), Box<dyn std::error::Error>> {
+    if *behavior == TrayBehavior::Disabled {
+        return Ok(());
+    }
+
+    let icon = load_icon()?;
+    let menu = build_menu(&TrayMenuData {
+        environments: vec![],
+    });
+
+    let tray_icon = TrayIconBuilder::new()
+        .with_menu(Box::new(menu))
+        .with_tooltip("Versi")
+        .with_icon(icon)
+        .build()?;
+
+    TRAY_ICON.with(|cell| {
+        *cell.borrow_mut() = Some(tray_icon);
+    });
+
+    Ok(())
+}
+
+pub fn destroy_tray() {
+    TRAY_ICON.with(|cell| {
+        *cell.borrow_mut() = None;
+    });
+}
+
+pub fn is_tray_active() -> bool {
+    TRAY_ICON.with(|cell| cell.borrow().is_some())
+}
+
+fn load_icon() -> Result<Icon, Box<dyn std::error::Error>> {
+    let icon_bytes = include_bytes!("../../../assets/logo.png");
+    let img = image::load_from_memory(icon_bytes)?;
+    let rgba = img.to_rgba8();
+    let (width, height) = rgba.dimensions();
+    Icon::from_rgba(rgba.into_raw(), width, height).map_err(Into::into)
+}
+
+fn build_menu(data: &TrayMenuData) -> Menu {
+    let menu = Menu::new();
+    let show_multiple_envs = data.environments.len() > 1;
+
+    for (env_idx, env) in data.environments.iter().enumerate() {
+        if show_multiple_envs {
+            let _ = menu.append(&MenuItem::with_id(
+                MenuId::new(format!("env_header:{}", env_idx)),
+                &env.name,
+                false,
+                None,
+            ));
+        }
+
+        for ver in &env.versions {
+            let label = if ver.is_default {
+                format!("{} ✓", ver.version)
+            } else {
+                ver.version.clone()
+            };
+
+            let _ = menu.append(&MenuItem::with_id(
+                MenuId::new(format!("set:{}:{}", env_idx, ver.version)),
+                label,
+                true,
+                None,
+            ));
+        }
+
+        if show_multiple_envs && env_idx < data.environments.len() - 1 {
+            let _ = menu.append(&PredefinedMenuItem::separator());
+        }
+    }
+
+    if !data.environments.is_empty() && data.environments.iter().any(|e| !e.versions.is_empty()) {
+        let _ = menu.append(&PredefinedMenuItem::separator());
+    }
+
+    let _ = menu.append(&MenuItem::with_id(
+        MenuId::new("show_window"),
+        "Show Window",
+        true,
+        None,
+    ));
+    let _ = menu.append(&MenuItem::with_id(MenuId::new("quit"), "Quit", true, None));
+
+    menu
+}
+
+pub fn update_menu(data: &TrayMenuData) {
+    TRAY_ICON.with(|cell| {
+        if let Some(tray) = cell.borrow().as_ref() {
+            let menu = build_menu(data);
+            tray.set_menu(Some(Box::new(menu)));
+        }
+    });
+}
+
+fn parse_menu_event(id: &str) -> Option<TrayMessage> {
+    match id {
+        "show_window" => Some(TrayMessage::ShowWindow),
+        "quit" => Some(TrayMessage::Quit),
+        s if s.starts_with("set:") => {
+            let parts: Vec<&str> = s.splitn(3, ':').collect();
+            if parts.len() == 3 {
+                let env_index = parts[1].parse().ok()?;
+                let version = parts[2].to_string();
+                Some(TrayMessage::SetDefault { env_index, version })
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+pub fn tray_subscription() -> Subscription<Message> {
+    Subscription::run(|| {
+        iced::futures::stream::unfold((), |()| async {
+            let receiver = MenuEvent::receiver();
+
+            loop {
+                if let Ok(event) = receiver.try_recv() {
+                    let id_str = event.id().as_ref();
+                    if let Some(msg) = parse_menu_event(id_str) {
+                        return Some((Message::TrayEvent(msg), ()));
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+        })
+    })
+}

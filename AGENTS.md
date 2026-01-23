@@ -197,7 +197,5 @@ Key external crates:
 ## Not Yet Implemented
 
 These features are planned but not yet built:
-- System tray with quick-switch menu
-- fnm update checking and in-app update
 - Parallel install operations
 - Window size/position persistence

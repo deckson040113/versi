@@ -12,18 +12,20 @@ use versi_platform::EnvironmentId;
 use versi_shell::detect_shells;
 
 use crate::message::{InitResult, Message};
-use crate::settings::{AppSettings, ThemeSetting};
+use crate::settings::{AppSettings, ThemeSetting, TrayBehavior};
 use crate::state::{
     AppState, EnvironmentState, InstallModalState, MainState, Modal, OnboardingState,
     OnboardingStep, Operation, SettingsModalState, ShellConfigStatus, ShellSetupStatus,
     ShellVerificationStatus, Toast, UndoAction,
 };
 use crate::theme::{dark_theme, get_system_theme, light_theme};
+use crate::tray::{self, TrayMenuData, TrayMessage};
 use crate::views;
 
 pub struct FnmUi {
     state: AppState,
     settings: AppSettings,
+    window_id: Option<iced::window::Id>,
 }
 
 impl FnmUi {
@@ -33,6 +35,7 @@ impl FnmUi {
         let app = Self {
             state: AppState::Loading,
             settings,
+            window_id: None,
         };
 
         let init_task = Task::perform(initialize(), Message::Initialized);
@@ -261,6 +264,24 @@ impl FnmUi {
                 }
                 Task::none()
             }
+            Message::WindowEvent(iced::window::Event::CloseRequested) | Message::CloseWindow => {
+                if self.settings.tray_behavior == TrayBehavior::AlwaysRunning
+                    && tray::is_tray_active()
+                {
+                    if let Some(id) = self.window_id {
+                        iced::window::minimize(id, true)
+                    } else {
+                        Task::none()
+                    }
+                } else {
+                    iced::exit()
+                }
+            }
+            Message::WindowOpened(id) => {
+                self.window_id = Some(id);
+                Task::none()
+            }
+            Message::WindowEvent(_) => Task::none(),
             Message::CheckForAppUpdate => self.handle_check_for_app_update(),
             Message::AppUpdateChecked(update) => {
                 self.handle_app_update_checked(update);
@@ -312,6 +333,13 @@ impl FnmUi {
                 |_| Message::NoOp,
             ),
             Message::EnvironmentSelected(idx) => self.handle_environment_selected(idx),
+            Message::TrayEvent(tray_msg) => self.handle_tray_event(tray_msg),
+            Message::TrayBehaviorChanged(behavior) => self.handle_tray_behavior_changed(behavior),
+            Message::StartMinimizedToggled(value) => {
+                self.settings.start_minimized = value;
+                let _ = self.settings.save();
+                Task::none()
+            }
             _ => Task::none(),
         }
     }
@@ -337,17 +365,49 @@ impl FnmUi {
 
         let keyboard = iced::event::listen_with(|event, _status, _id| {
             if let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
-                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
-                ..
+                key, modifiers, ..
             }) = event
             {
-                Some(Message::CloseModal)
+                if key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) {
+                    return Some(Message::CloseModal);
+                }
+
+                #[cfg(target_os = "macos")]
+                let close_modifier = modifiers.command();
+                #[cfg(not(target_os = "macos"))]
+                let close_modifier = modifiers.control();
+
+                if close_modifier {
+                    if let iced::keyboard::Key::Character(c) = key {
+                        if c.as_str() == "w" {
+                            return Some(Message::CloseWindow);
+                        }
+                    }
+                }
+
+                None
             } else {
                 None
             }
         });
 
-        Subscription::batch([tick, keyboard])
+        let window_events = iced::event::listen_with(|event, _status, _id| {
+            if let iced::Event::Window(window_event) = event {
+                Some(Message::WindowEvent(window_event))
+            } else {
+                None
+            }
+        });
+
+        let tray_sub = if self.settings.tray_behavior != TrayBehavior::Disabled {
+            tray::tray_subscription()
+        } else {
+            Subscription::none()
+        };
+
+        let window_open_sub = iced::window::open_events().map(Message::WindowOpened);
+
+        Subscription::batch([tick, keyboard, window_events, tray_sub, window_open_sub])
     }
 
     fn handle_initialized(&mut self, result: InitResult) -> Task<Message> {
@@ -461,6 +521,7 @@ impl FnmUi {
                 env.update_versions(versions);
             }
         }
+        self.update_tray_menu();
         Task::none()
     }
 
@@ -1302,6 +1363,58 @@ impl FnmUi {
     fn handle_fnm_update_checked(&mut self, update: Option<versi_core::FnmUpdate>) {
         if let AppState::Main(state) = &mut self.state {
             state.fnm_update = update;
+        }
+    }
+
+    fn handle_tray_event(&mut self, msg: TrayMessage) -> Task<Message> {
+        match msg {
+            TrayMessage::ShowWindow => {
+                if let Some(id) = self.window_id {
+                    Task::batch([
+                        iced::window::minimize(id, false),
+                        iced::window::gain_focus(id),
+                    ])
+                } else {
+                    Task::none()
+                }
+            }
+            TrayMessage::Quit => iced::exit(),
+            TrayMessage::SetDefault { env_index, version } => {
+                if let AppState::Main(state) = &mut self.state {
+                    if env_index != state.active_environment_idx {
+                        state.active_environment_idx = env_index;
+                        let env = &state.environments[env_index];
+                        let env_id = env.id.clone();
+                        state.backend = create_backend_for_environment(&env_id);
+                    }
+                }
+                self.handle_set_default(version)
+            }
+        }
+    }
+
+    fn handle_tray_behavior_changed(&mut self, behavior: TrayBehavior) -> Task<Message> {
+        let old_behavior = self.settings.tray_behavior.clone();
+        self.settings.tray_behavior = behavior.clone();
+        let _ = self.settings.save();
+
+        if old_behavior == TrayBehavior::Disabled && behavior != TrayBehavior::Disabled {
+            if let Err(e) = tray::init_tray(&behavior) {
+                error!("Failed to initialize tray: {}", e);
+            } else {
+                self.update_tray_menu();
+            }
+        } else if behavior == TrayBehavior::Disabled {
+            tray::destroy_tray();
+        }
+
+        Task::none()
+    }
+
+    fn update_tray_menu(&self) {
+        if let AppState::Main(state) = &self.state {
+            let data = TrayMenuData::from_environments(&state.environments);
+            tray::update_menu(&data);
         }
     }
 }

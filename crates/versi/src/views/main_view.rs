@@ -4,7 +4,7 @@ use iced::widget::{
 use iced::{Alignment, Element, Length};
 
 use crate::message::Message;
-use crate::settings::AppSettings;
+use crate::settings::{AppSettings, TrayBehavior};
 use crate::state::{MainState, Modal, Operation, SettingsModalState, ShellVerificationStatus};
 use crate::theme::{is_system_dark, styles};
 use crate::widgets::{install_modal, toast_container, version_list};
@@ -283,6 +283,47 @@ fn settings_modal_view<'a>(
                 .padding([10, 16]),
         ]
         .spacing(8),
+        Space::new().height(24),
+        text("System Tray").size(13),
+        Space::new().height(8),
+        row![
+            button(text("When Open").size(13))
+                .on_press(Message::TrayBehaviorChanged(TrayBehavior::WhenWindowOpen))
+                .style(if settings.tray_behavior == TrayBehavior::WhenWindowOpen {
+                    styles::primary_button
+                } else {
+                    styles::secondary_button
+                })
+                .padding([10, 16]),
+            button(text("Always").size(13))
+                .on_press(Message::TrayBehaviorChanged(TrayBehavior::AlwaysRunning))
+                .style(if settings.tray_behavior == TrayBehavior::AlwaysRunning {
+                    styles::primary_button
+                } else {
+                    styles::secondary_button
+                })
+                .padding([10, 16]),
+            button(text("Disabled").size(13))
+                .on_press(Message::TrayBehaviorChanged(TrayBehavior::Disabled))
+                .style(if settings.tray_behavior == TrayBehavior::Disabled {
+                    styles::primary_button
+                } else {
+                    styles::secondary_button
+                })
+                .padding([10, 16]),
+        ]
+        .spacing(8),
+        row![
+            toggler(settings.start_minimized)
+                .on_toggle(Message::StartMinimizedToggled)
+                .size(18),
+            text("Start minimized to tray").size(12),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center),
+        text("\"Always\" keeps the app running in the tray when closed")
+            .size(11)
+            .color(iced::Color::from_rgb8(142, 142, 147)),
         Space::new().height(24),
         text("Shell Options").size(13),
         Space::new().height(8),
