@@ -1,8 +1,64 @@
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::io::{self, Write};
+use std::path::PathBuf;
+use std::sync::Mutex;
 use versi_platform::AppPaths;
+
+struct ResilientFileWriter {
+    path: PathBuf,
+    file: Mutex<Option<File>>,
+}
+
+impl ResilientFileWriter {
+    fn new(path: PathBuf) -> io::Result<Self> {
+        let file = OpenOptions::new().create(true).append(true).open(&path)?;
+        Ok(Self {
+            path,
+            file: Mutex::new(Some(file)),
+        })
+    }
+
+    fn ensure_file(&self) -> io::Result<()> {
+        let mut guard = self.file.lock().unwrap();
+
+        if !self.path.exists() {
+            if let Some(parent) = self.path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&self.path)?;
+            *guard = Some(file);
+        }
+
+        Ok(())
+    }
+}
+
+impl Write for ResilientFileWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.ensure_file()?;
+        let mut guard = self.file.lock().unwrap();
+        if let Some(ref mut file) = *guard {
+            file.write(buf)
+        } else {
+            Err(io::Error::new(io::ErrorKind::Other, "File not available"))
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let mut guard = self.file.lock().unwrap();
+        if let Some(ref mut file) = *guard {
+            file.flush()
+        } else {
+            Ok(())
+        }
+    }
+}
 
 pub fn init_logging(debug_enabled: bool) {
     if !debug_enabled {
@@ -18,9 +74,9 @@ pub fn init_logging(debug_enabled: bool) {
         .add_filter_allow_str("versi")
         .build();
 
-    let file_logger = File::create(&log_path)
+    let file_logger = ResilientFileWriter::new(log_path.clone())
         .ok()
-        .map(|file| WriteLogger::new(LevelFilter::Debug, config.clone(), file));
+        .map(|writer| WriteLogger::new(LevelFilter::Debug, config.clone(), writer));
 
     #[cfg(debug_assertions)]
     {

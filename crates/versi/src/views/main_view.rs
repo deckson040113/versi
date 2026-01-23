@@ -412,7 +412,7 @@ fn settings_modal_view<'a>(
         .align_y(Alignment::Center),
     );
     content = content.push(
-        text("Restart required to enable/disable or clear log file")
+        text("Restart required to enable/disable")
             .size(11)
             .color(iced::Color::from_rgb8(142, 142, 147)),
     );
