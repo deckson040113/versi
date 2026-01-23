@@ -49,6 +49,10 @@ impl AppPaths {
         self.cache_dir.join("versions.json")
     }
 
+    pub fn log_file(&self) -> PathBuf {
+        self.data_dir.join("debug.log")
+    }
+
     pub fn ensure_dirs(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(&self.config_dir)?;
         std::fs::create_dir_all(&self.cache_dir)?;

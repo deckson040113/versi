@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 const GITHUB_REPO: &str = "almeidx/versi";
+const FNM_GITHUB_REPO: &str = "Schniz/fnm";
 
 #[derive(Debug, Clone)]
 pub struct AppUpdate {
@@ -8,6 +9,13 @@ pub struct AppUpdate {
     pub latest_version: String,
     pub release_url: String,
     pub release_notes: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FnmUpdate {
+    pub current_version: String,
+    pub latest_version: String,
+    pub release_url: String,
 }
 
 #[derive(Deserialize)]
@@ -49,6 +57,43 @@ pub async fn check_for_update(current_version: &str) -> Option<AppUpdate> {
             latest_version: latest.to_string(),
             release_url: release.html_url,
             release_notes: release.body,
+        })
+    } else {
+        None
+    }
+}
+
+pub async fn check_for_fnm_update(current_version: &str) -> Option<FnmUpdate> {
+    let url = format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        FNM_GITHUB_REPO
+    );
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&url)
+        .header("User-Agent", "versi")
+        .send()
+        .await
+        .ok()?;
+
+    if !response.status().is_success() {
+        return None;
+    }
+
+    let release: GitHubRelease = response.json().await.ok()?;
+
+    let latest = release
+        .tag_name
+        .strip_prefix('v')
+        .unwrap_or(&release.tag_name);
+    let current = current_version.strip_prefix('v').unwrap_or(current_version);
+
+    if is_newer_version(latest, current) {
+        Some(FnmUpdate {
+            current_version: current.to_string(),
+            latest_version: latest.to_string(),
+            release_url: release.html_url,
         })
     } else {
         None

@@ -25,3 +25,5 @@ chrono.workspace = true
 dirs.workspace = true
 open.workspace = true
 async-stream = "0.3.6"
+log.workspace = true
+simplelog.workspace = true

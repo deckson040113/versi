@@ -61,14 +61,15 @@ pub fn view<'a>(state: &'a MainState, settings: &'a AppSettings) -> Element<'a, 
 fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     let env = state.active_environment();
 
-    let title_section = column![
-        text("Node Versions").size(28),
-        match &env.default_version {
-            Some(v) => text(format!("Default: {}", v)).size(13),
-            None => text("No default set").size(13),
-        },
-    ]
-    .spacing(2);
+    let subtitle = match (&env.default_version, &state.fnm_version) {
+        (Some(v), Some(fnm_v)) => format!("Default: {} · fnm {}", v, fnm_v),
+        (Some(v), None) => format!("Default: {}", v),
+        (None, Some(fnm_v)) => format!("fnm {}", fnm_v),
+        (None, None) => "No default set".to_string(),
+    };
+
+    let title_section =
+        column![text("Node Versions").size(28), text(subtitle).size(13),].spacing(2);
 
     let mut button_row = row![
         button(text("Install").size(13))
@@ -94,6 +95,18 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
                     .padding([2, 8]),
             )
             .on_press(Message::OpenAppUpdate)
+            .style(styles::app_update_button)
+            .padding(0),
+        );
+    }
+
+    if let Some(update) = &state.fnm_update {
+        button_row = button_row.push(
+            button(
+                container(text(format!("fnm {} available", update.latest_version)).size(11))
+                    .padding([2, 8]),
+            )
+            .on_press(Message::OpenFnmUpdate)
             .style(styles::app_update_button)
             .padding(0),
         );
@@ -368,6 +381,34 @@ fn settings_modal_view<'a>(
             content = content.push(shell_row.spacing(8).align_y(Alignment::Center));
         }
     }
+
+    content = content.push(Space::new().height(24));
+    content = content.push(text("Advanced").size(13));
+    content = content.push(Space::new().height(8));
+    content = content.push(
+        row![
+            toggler(settings.debug_logging)
+                .on_toggle(Message::DebugLoggingToggled)
+                .size(18),
+            text("Debug logging").size(12),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center),
+    );
+    let log_path_hint = {
+        let paths = versi_platform::AppPaths::new();
+        format!("Log file: {}", paths.log_file().display())
+    };
+    content = content.push(
+        text(log_path_hint)
+            .size(11)
+            .color(iced::Color::from_rgb8(142, 142, 147)),
+    );
+    content = content.push(
+        text("Requires restart to take effect")
+            .size(11)
+            .color(iced::Color::from_rgb8(142, 142, 147)),
+    );
 
     content = content.push(Space::new().height(24));
     content = content.push(text("About").size(13));

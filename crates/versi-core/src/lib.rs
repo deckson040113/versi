@@ -14,7 +14,7 @@ pub use detection::{detect_fnm, detect_fnm_dir, install_fnm, FnmDetection};
 pub use error::FnmError;
 pub use progress::parse_progress_line;
 pub use schedule::{fetch_release_schedule, ReleaseSchedule};
-pub use update::{check_for_update, AppUpdate};
+pub use update::{check_for_fnm_update, check_for_update, AppUpdate, FnmUpdate};
 pub use version::{parse_installed_versions, parse_remote_versions};
 
 pub use versi_backend::{

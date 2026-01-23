@@ -3,6 +3,7 @@
 use iced::window;
 
 mod app;
+mod logging;
 mod message;
 mod settings;
 mod state;
@@ -11,6 +12,11 @@ mod views;
 mod widgets;
 
 fn main() -> iced::Result {
+    let settings = settings::AppSettings::load();
+    logging::init_logging(settings.debug_logging);
+
+    log::info!("Versi {} starting", env!("CARGO_PKG_VERSION"));
+
     let icon = window::icon::from_file_data(include_bytes!("../../../assets/logo.png"), None).ok();
 
     iced::application(app::FnmUi::new, app::FnmUi::update, app::FnmUi::view)

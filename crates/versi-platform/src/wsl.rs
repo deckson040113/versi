@@ -1,3 +1,4 @@
+use log::{debug, error, info, trace, warn};
 use std::process::Command;
 use thiserror::Error;
 
@@ -56,31 +57,64 @@ pub enum WslError {
 }
 
 pub fn detect_wsl_distros() -> Vec<WslDistro> {
-    // Use --list --running to only get distros that are already running
-    // This avoids accidentally starting WSL
+    info!("Detecting WSL distros...");
+    debug!("Running: wsl.exe --list --running --verbose");
+
     let output = Command::new("wsl.exe")
         .args(["--list", "--running", "--verbose"])
         .hide_window()
         .output();
 
     match output {
-        Ok(output) if output.status.success() => {
-            // wsl.exe outputs UTF-16LE on Windows
-            let stdout = decode_wsl_output(&output.stdout);
-            let mut distros = parse_wsl_list(&stdout);
+        Ok(output) => {
+            debug!("wsl.exe exit status: {:?}", output.status);
+            trace!("wsl.exe stdout raw bytes: {:?}", &output.stdout);
+            trace!(
+                "wsl.exe stderr: {:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
 
-            for distro in &mut distros {
-                distro.fnm_path = find_fnm_path(&distro.name);
+            if output.status.success() {
+                let stdout = decode_wsl_output(&output.stdout);
+                debug!("Decoded WSL output:\n{}", stdout);
+
+                let mut distros = parse_wsl_list(&stdout);
+                info!("Found {} WSL distros before fnm detection", distros.len());
+
+                for distro in &mut distros {
+                    debug!("Checking for fnm in distro: {}", distro.name);
+                    distro.fnm_path = find_fnm_path(&distro.name);
+                    if let Some(ref path) = distro.fnm_path {
+                        info!("Found fnm in {}: {}", distro.name, path);
+                    } else {
+                        warn!("fnm not found in distro: {}", distro.name);
+                    }
+                }
+
+                let with_fnm: Vec<_> = distros.iter().filter(|d| d.fnm_path.is_some()).collect();
+                info!(
+                    "WSL detection complete: {} distros with fnm out of {} total",
+                    with_fnm.len(),
+                    distros.len()
+                );
+                distros
+            } else {
+                warn!(
+                    "wsl.exe command failed with status: {:?}, stderr: {}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                Vec::new()
             }
-
-            distros
         }
-        _ => Vec::new(),
+        Err(e) => {
+            error!("Failed to execute wsl.exe: {}", e);
+            Vec::new()
+        }
     }
 }
 
 fn find_fnm_path(distro: &str) -> Option<String> {
-    // Check common fnm installation locations directly
     let common_paths = [
         "$HOME/.local/share/fnm/fnm",
         "$HOME/.cargo/bin/fnm",
@@ -89,12 +123,16 @@ fn find_fnm_path(distro: &str) -> Option<String> {
         "$HOME/.fnm/fnm",
     ];
 
-    // Build a command that checks each path and returns the first one that exists
     let check_cmd = common_paths
         .iter()
         .map(|p| format!("[ -x {} ] && echo {}", p, p))
         .collect::<Vec<_>>()
         .join(" || ");
+
+    debug!(
+        "Running fnm path detection for {}: wsl.exe -d {} -- sh -c \"{}\"",
+        distro, distro, check_cmd
+    );
 
     let output = Command::new("wsl.exe")
         .args(["-d", distro, "--", "sh", "-c", &check_cmd])
@@ -102,13 +140,38 @@ fn find_fnm_path(distro: &str) -> Option<String> {
         .output();
 
     match output {
-        Ok(output) if output.status.success() => {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                return Some(path);
+        Ok(output) => {
+            debug!(
+                "fnm path detection for {} - exit status: {:?}",
+                distro, output.status
+            );
+            trace!(
+                "fnm path detection stdout: {:?}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            trace!(
+                "fnm path detection stderr: {:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    debug!("fnm found at: {}", path);
+                    return Some(path);
+                }
+                debug!("fnm path detection returned empty output");
+            } else {
+                warn!(
+                    "fnm path detection failed for {}: {}",
+                    distro,
+                    String::from_utf8_lossy(&output.stderr)
+                );
             }
         }
-        _ => {}
+        Err(e) => {
+            error!("Failed to run fnm path detection for {}: {}", distro, e);
+        }
     }
 
     None
@@ -167,18 +230,41 @@ fn parse_wsl_list(output: &str) -> Vec<WslDistro> {
 }
 
 pub async fn execute_in_wsl(distro: &str, command: &str) -> Result<String, WslError> {
+    debug!(
+        "Executing in WSL {}: wsl.exe -d {} -- bash -c \"{}\"",
+        distro, distro, command
+    );
+
     let output = tokio::process::Command::new("wsl.exe")
         .args(["-d", distro, "--", "bash", "-c", command])
         .hide_window()
         .output()
         .await?;
 
+    debug!("WSL command exit status: {:?}", output.status);
+    trace!(
+        "WSL command stdout: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    trace!(
+        "WSL command stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
     if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        debug!(
+            "WSL command succeeded, output length: {} bytes",
+            stdout.len()
+        );
+        Ok(stdout)
     } else {
-        Err(WslError::CommandFailed {
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        })
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        error!(
+            "WSL command failed in {}: command='{}', stderr='{}'",
+            distro, command, stderr
+        );
+        Err(WslError::CommandFailed { stderr })
     }
 }
 

@@ -1,10 +1,12 @@
+use log::{debug, error, info};
 use std::path::PathBuf;
 use std::time::Instant;
 
 use iced::{Element, Subscription, Task, Theme};
 
 use versi_core::{
-    check_for_update, detect_fnm, fetch_release_schedule, FnmBackend, VersionManager,
+    check_for_fnm_update, check_for_update, detect_fnm, fetch_release_schedule, FnmBackend,
+    VersionManager,
 };
 use versi_platform::EnvironmentId;
 use versi_shell::detect_shells;
@@ -174,6 +176,12 @@ impl FnmUi {
                 let _ = self.settings.save();
                 self.update_shell_flags()
             }
+            Message::DebugLoggingToggled(value) => {
+                info!("Debug logging toggled: {}", value);
+                self.settings.debug_logging = value;
+                let _ = self.settings.save();
+                Task::none()
+            }
             Message::ShellFlagsUpdated(_) => Task::none(),
             Message::CheckShellSetup => self.handle_check_shell_setup(),
             Message::ShellSetupChecked(results) => {
@@ -233,6 +241,25 @@ impl FnmUi {
                 }
                 Task::none()
             }
+            Message::CheckForFnmUpdate => self.handle_check_for_fnm_update(),
+            Message::FnmUpdateChecked(update) => {
+                self.handle_fnm_update_checked(update);
+                Task::none()
+            }
+            Message::OpenFnmUpdate => {
+                if let AppState::Main(state) = &self.state {
+                    if let Some(update) = &state.fnm_update {
+                        let url = update.release_url.clone();
+                        return Task::perform(
+                            async move {
+                                let _ = open::that(&url);
+                            },
+                            |_| Message::NoOp,
+                        );
+                    }
+                }
+                Task::none()
+            }
             Message::OpenLink(url) => Task::perform(
                 async move {
                     let _ = open::that(&url);
@@ -279,8 +306,17 @@ impl FnmUi {
     }
 
     fn handle_initialized(&mut self, result: InitResult) -> Task<Message> {
+        info!(
+            "Handling initialization result: fnm_found={}, environments={}",
+            result.fnm_found,
+            result.environments.len()
+        );
+
         if !result.fnm_found {
+            info!("fnm not found, entering onboarding flow");
             let shells = detect_shells();
+            debug!("Detected {} shells for configuration", shells.len());
+
             let shell_statuses: Vec<ShellConfigStatus> = shells
                 .into_iter()
                 .map(|s| ShellConfigStatus {
@@ -320,7 +356,11 @@ impl FnmUi {
             .map(|env_id| EnvironmentState::new(env_id.clone()))
             .collect();
 
-        self.state = AppState::Main(MainState::new_with_environments(backend, environments));
+        self.state = AppState::Main(MainState::new_with_environments(
+            backend,
+            environments,
+            result.fnm_version.clone(),
+        ));
 
         let load_backend = FnmBackend::new(fnm_path, result.fnm_version, fnm_dir.clone());
         let load_backend = if let Some(dir) = fnm_dir {
@@ -343,9 +383,16 @@ impl FnmUi {
 
         let fetch_remote = self.handle_fetch_remote_versions();
         let fetch_schedule = self.handle_fetch_release_schedule();
-        let check_update = self.handle_check_for_app_update();
+        let check_app_update = self.handle_check_for_app_update();
+        let check_fnm_update = self.handle_check_for_fnm_update();
 
-        Task::batch([load_installed, fetch_remote, fetch_schedule, check_update])
+        Task::batch([
+            load_installed,
+            fetch_remote,
+            fetch_schedule,
+            check_app_update,
+            check_fnm_update,
+        ])
     }
 
     fn handle_environment_loaded(
@@ -354,6 +401,18 @@ impl FnmUi {
         versions: Vec<versi_core::InstalledVersion>,
         _default_version: Option<versi_core::NodeVersion>,
     ) -> Task<Message> {
+        info!(
+            "Environment loaded: {:?} with {} versions",
+            env_id,
+            versions.len()
+        );
+        for v in &versions {
+            debug!(
+                "  Installed version: {} (default={})",
+                v.version, v.is_default
+            );
+        }
+
         if let AppState::Main(state) = &mut self.state {
             if let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id) {
                 env.update_versions(versions);
@@ -363,6 +422,8 @@ impl FnmUi {
     }
 
     fn handle_environment_error(&mut self, env_id: EnvironmentId, error: String) -> Task<Message> {
+        error!("Environment error for {:?}: {}", env_id, error);
+
         if let AppState::Main(state) = &mut self.state {
             if let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id) {
                 env.loading = false;
@@ -375,20 +436,29 @@ impl FnmUi {
     fn handle_environment_selected(&mut self, idx: usize) -> Task<Message> {
         if let AppState::Main(state) = &mut self.state {
             if idx >= state.environments.len() || idx == state.active_environment_idx {
+                debug!(
+                    "Environment selection ignored: idx={}, current={}",
+                    idx, state.active_environment_idx
+                );
                 return Task::none();
             }
 
+            info!("Switching to environment {}", idx);
             state.active_environment_idx = idx;
 
             let env = &state.environments[idx];
             let env_id = env.id.clone();
+            debug!("Selected environment: {:?}", env_id);
+
             let needs_load =
                 env.loading || (env.installed_versions.is_empty() && env.error.is_none());
+            debug!("Environment needs loading: {}", needs_load);
 
             let new_backend = create_backend_for_environment(&env_id);
             state.backend = new_backend;
 
             if needs_load {
+                info!("Loading versions for environment: {:?}", env_id);
                 let env = state.active_environment_mut();
                 env.loading = true;
 
@@ -396,8 +466,16 @@ impl FnmUi {
 
                 return Task::perform(
                     async move {
+                        debug!("Fetching installed versions for {:?}...", env_id);
                         let versions = backend.list_installed().await.unwrap_or_default();
+                        debug!("Fetching default version for {:?}...", env_id);
                         let default = backend.default_version().await.ok().flatten();
+                        debug!(
+                            "Environment {:?} loaded: {} versions, default={:?}",
+                            env_id,
+                            versions.len(),
+                            default
+                        );
                         (env_id, versions, default)
                     },
                     |(env_id, versions, default)| Message::EnvironmentLoaded {
@@ -960,7 +1038,7 @@ impl FnmUi {
             backend
         };
         let backend: Box<dyn VersionManager> = Box::new(backend.clone());
-        self.state = AppState::Main(MainState::new(backend));
+        self.state = AppState::Main(MainState::new(backend, None));
 
         let load_backend = FnmBackend::new(fnm_path, None, fnm_dir.clone());
         let load_backend = if let Some(dir) = fnm_dir {
@@ -1164,10 +1242,36 @@ impl FnmUi {
             state.app_update = update;
         }
     }
+
+    fn handle_check_for_fnm_update(&mut self) -> Task<Message> {
+        if let AppState::Main(state) = &self.state {
+            if let Some(version) = &state.fnm_version {
+                let version = version.clone();
+                return Task::perform(
+                    async move { check_for_fnm_update(&version).await },
+                    Message::FnmUpdateChecked,
+                );
+            }
+        }
+        Task::none()
+    }
+
+    fn handle_fnm_update_checked(&mut self, update: Option<versi_core::FnmUpdate>) {
+        if let AppState::Main(state) = &mut self.state {
+            state.fnm_update = update;
+        }
+    }
 }
 
 async fn initialize() -> InitResult {
+    info!("Initializing application...");
+
+    debug!("Detecting fnm installation...");
     let detection = detect_fnm().await;
+    info!(
+        "fnm detection result: found={}, path={:?}, version={:?}",
+        detection.found, detection.path, detection.version
+    );
 
     #[allow(unused_mut)]
     let mut environments = vec![EnvironmentId::Native];
@@ -1175,15 +1279,35 @@ async fn initialize() -> InitResult {
     #[cfg(windows)]
     {
         use versi_platform::detect_wsl_distros;
-        for distro in detect_wsl_distros() {
-            // Only include distros where fnm was found
+        info!("Running on Windows, detecting WSL distros...");
+        let distros = detect_wsl_distros();
+        debug!(
+            "WSL distros found: {:?}",
+            distros.iter().map(|d| &d.name).collect::<Vec<_>>()
+        );
+
+        for distro in distros {
             if let Some(fnm_path) = distro.fnm_path {
+                info!(
+                    "Adding WSL environment: {} (fnm at {})",
+                    distro.name, fnm_path
+                );
                 environments.push(EnvironmentId::Wsl {
                     distro: distro.name,
                     fnm_path,
                 });
+            } else {
+                debug!("Skipping WSL distro {} (no fnm found)", distro.name);
             }
         }
+    }
+
+    info!(
+        "Initialization complete with {} environments",
+        environments.len()
+    );
+    for (i, env) in environments.iter().enumerate() {
+        debug!("  Environment {}: {:?}", i, env);
     }
 
     InitResult {

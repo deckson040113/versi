@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use log::{debug, error, info, trace};
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -74,14 +75,22 @@ impl FnmBackend {
     fn build_command(&self, args: &[&str]) -> Command {
         match &self.environment {
             Environment::Native => {
+                debug!(
+                    "Building native fnm command: {:?} {}",
+                    self.info.path,
+                    args.join(" ")
+                );
+
                 let mut cmd = Command::new(&self.info.path);
                 cmd.args(args);
 
                 if let Some(dir) = &self.fnm_dir {
+                    debug!("Setting FNM_DIR={:?}", dir);
                     cmd.env("FNM_DIR", dir);
                 }
 
                 if let Some(mirror) = &self.node_dist_mirror {
+                    debug!("Setting FNM_NODE_DIST_MIRROR={}", mirror);
                     cmd.env("FNM_NODE_DIST_MIRROR", mirror);
                 }
 
@@ -89,6 +98,13 @@ impl FnmBackend {
                 cmd
             }
             Environment::Wsl { distro, fnm_path } => {
+                debug!(
+                    "Building WSL fnm command: wsl.exe -d {} -- {} {}",
+                    distro,
+                    fnm_path,
+                    args.join(" ")
+                );
+
                 let mut cmd = Command::new("wsl.exe");
                 cmd.args(["-d", distro, "--", fnm_path]);
                 cmd.args(args);
@@ -99,14 +115,25 @@ impl FnmBackend {
     }
 
     async fn execute(&self, args: &[&str]) -> Result<String, BackendError> {
+        info!("Executing fnm command: {}", args.join(" "));
+
         let output = self.build_command(args).output().await?;
 
+        debug!("fnm command exit status: {:?}", output.status);
+        trace!("fnm stdout: {}", String::from_utf8_lossy(&output.stdout));
+
+        if !output.stderr.is_empty() {
+            trace!("fnm stderr: {}", String::from_utf8_lossy(&output.stderr));
+        }
+
         if output.status.success() {
-            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            debug!("fnm command succeeded, output: {} bytes", stdout.len());
+            Ok(stdout)
         } else {
-            Err(BackendError::CommandFailed {
-                stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-            })
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            error!("fnm command failed: args={:?}, stderr='{}'", args, stderr);
+            Err(BackendError::CommandFailed { stderr })
         }
     }
 }
@@ -179,12 +206,19 @@ impl VersionManager for FnmBackend {
         &self,
         version: &str,
     ) -> Result<mpsc::UnboundedReceiver<InstallProgress>, BackendError> {
+        info!(
+            "Starting install with progress tracking for version: {}",
+            version
+        );
+
         let (tx, rx) = mpsc::unbounded_channel();
 
         let mut cmd = self.build_command(&["install", version, "--progress", "never"]);
         cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
+        debug!("Spawning fnm install process...");
         let mut child = cmd.spawn()?;
+        debug!("fnm install process spawned successfully");
 
         let stdout = child
             .stdout
@@ -192,11 +226,17 @@ impl VersionManager for FnmBackend {
             .ok_or_else(|| BackendError::IoError("Failed to capture stdout".to_string()))?;
 
         let tx_stdout = tx.clone();
+        let version_for_stdout = version.to_string();
         tokio::spawn(async move {
             let mut reader = BufReader::new(stdout).lines();
 
             while let Ok(Some(line)) = reader.next_line().await {
+                trace!("fnm install stdout [{}]: {}", version_for_stdout, line);
                 if let Some(progress) = parse_progress_line(&line) {
+                    debug!(
+                        "Progress update [{}]: phase={:?}, percent={:?}",
+                        version_for_stdout, progress.phase, progress.percent
+                    );
                     let _ = tx_stdout.send(progress);
                 }
             }
@@ -209,22 +249,32 @@ impl VersionManager for FnmBackend {
 
         let tx_stderr = tx.clone();
         let (stderr_tx, mut stderr_rx) = mpsc::unbounded_channel::<String>();
+        let version_for_stderr = version.to_string();
         tokio::spawn(async move {
             let mut reader = BufReader::new(stderr).lines();
 
             while let Ok(Some(line)) = reader.next_line().await {
+                trace!("fnm install stderr [{}]: {}", version_for_stderr, line);
                 let _ = stderr_tx.send(line.clone());
                 if let Some(progress) = parse_progress_line(&line) {
+                    debug!(
+                        "Progress from stderr [{}]: phase={:?}",
+                        version_for_stderr, progress.phase
+                    );
                     let _ = tx_stderr.send(progress);
                 }
             }
         });
 
         let tx_final = tx;
+        let version_for_final = version.to_string();
         tokio::spawn(async move {
             let status = child.wait().await;
+            debug!(
+                "fnm install process finished [{}]: {:?}",
+                version_for_final, status
+            );
 
-            // Collect any stderr content for error reporting
             let mut stderr_lines = Vec::new();
             while let Ok(line) = stderr_rx.try_recv() {
                 stderr_lines.push(line);
@@ -233,20 +283,41 @@ impl VersionManager for FnmBackend {
 
             match status {
                 Ok(s) if s.success() => {
+                    info!(
+                        "Installation completed successfully for version: {}",
+                        version_for_final
+                    );
                     let _ = tx_final.send(InstallProgress {
                         phase: InstallPhase::Complete,
                         percent: Some(100.0),
                         ..Default::default()
                     });
                 }
-                _ => {
+                Ok(s) => {
+                    error!(
+                        "Installation failed for version {}: exit code {:?}, stderr: {}",
+                        version_for_final,
+                        s.code(),
+                        stderr_content
+                    );
                     let _ = tx_final.send(InstallProgress {
                         phase: InstallPhase::Failed,
                         error: if stderr_content.is_empty() {
-                            None
+                            Some(format!("Process exited with code {:?}", s.code()))
                         } else {
                             Some(stderr_content)
                         },
+                        ..Default::default()
+                    });
+                }
+                Err(e) => {
+                    error!(
+                        "Installation failed for version {} with error: {}",
+                        version_for_final, e
+                    );
+                    let _ = tx_final.send(InstallProgress {
+                        phase: InstallPhase::Failed,
+                        error: Some(e.to_string()),
                         ..Default::default()
                     });
                 }

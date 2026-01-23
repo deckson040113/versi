@@ -24,6 +24,9 @@ pub struct AppSettings {
 
     #[serde(default)]
     pub shell_options: ShellOptions,
+
+    #[serde(default)]
+    pub debug_logging: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,6 +69,7 @@ impl Default for AppSettings {
             fnm_dir: None,
             node_dist_mirror: None,
             shell_options: ShellOptions::default(),
+            debug_logging: false,
         }
     }
 }

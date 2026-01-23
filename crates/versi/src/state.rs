@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 use std::time::Instant;
 use versi_core::{
-    AppUpdate, BackendInfo, InstallProgress, InstalledVersion, NodeVersion, ReleaseSchedule,
-    RemoteVersion, VersionGroup, VersionManager,
+    AppUpdate, BackendInfo, FnmUpdate, InstallProgress, InstalledVersion, NodeVersion,
+    ReleaseSchedule, RemoteVersion, VersionGroup, VersionManager,
 };
 use versi_platform::EnvironmentId;
 use versi_shell::ShellType;
@@ -69,6 +69,8 @@ pub struct MainState {
     pub search_query: String,
     pub backend: Box<dyn VersionManager>,
     pub app_update: Option<AppUpdate>,
+    pub fnm_version: Option<String>,
+    pub fnm_update: Option<FnmUpdate>,
 }
 
 impl std::fmt::Debug for MainState {
@@ -83,12 +85,14 @@ impl std::fmt::Debug for MainState {
             .field("search_query", &self.search_query)
             .field("backend", &self.backend.name())
             .field("app_update", &self.app_update)
+            .field("fnm_version", &self.fnm_version)
+            .field("fnm_update", &self.fnm_update)
             .finish()
     }
 }
 
 impl MainState {
-    pub fn new(backend: Box<dyn VersionManager>) -> Self {
+    pub fn new(backend: Box<dyn VersionManager>, fnm_version: Option<String>) -> Self {
         Self {
             environments: vec![EnvironmentState::new(EnvironmentId::Native)],
             active_environment_idx: 0,
@@ -99,12 +103,15 @@ impl MainState {
             search_query: String::new(),
             backend,
             app_update: None,
+            fnm_version,
+            fnm_update: None,
         }
     }
 
     pub fn new_with_environments(
         backend: Box<dyn VersionManager>,
         environments: Vec<EnvironmentState>,
+        fnm_version: Option<String>,
     ) -> Self {
         Self {
             environments,
@@ -116,6 +123,8 @@ impl MainState {
             search_query: String::new(),
             backend,
             app_update: None,
+            fnm_version,
+            fnm_update: None,
         }
     }
 

@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use versi_core::{
-    AppUpdate, InstallProgress, InstalledVersion, NodeVersion, ReleaseSchedule, RemoteVersion,
+    AppUpdate, FnmUpdate, InstallProgress, InstalledVersion, NodeVersion, ReleaseSchedule,
+    RemoteVersion,
 };
 use versi_platform::EnvironmentId;
 use versi_shell::ShellType;
@@ -76,6 +77,7 @@ pub enum Message {
     ShellOptionUseOnCdToggled(bool),
     ShellOptionResolveEnginesToggled(bool),
     ShellOptionCorepackEnabledToggled(bool),
+    DebugLoggingToggled(bool),
     CheckShellSetup,
     ShellSetupChecked(Vec<(ShellType, versi_shell::VerificationResult)>),
     ConfigureShell(ShellType),
@@ -98,6 +100,10 @@ pub enum Message {
     AppUpdateChecked(Option<AppUpdate>),
     OpenAppUpdate,
     DismissAppUpdate,
+
+    CheckForFnmUpdate,
+    FnmUpdateChecked(Option<FnmUpdate>),
+    OpenFnmUpdate,
 
     OpenLink(String),
 }
