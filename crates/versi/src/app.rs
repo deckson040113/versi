@@ -217,9 +217,10 @@ impl FnmUi {
             }
             Message::LogFileCleared => {
                 if let AppState::Main(state) = &mut self.state
-                    && let Some(Modal::Settings(settings_state)) = &mut state.modal {
-                        settings_state.log_file_size = Some(0);
-                    }
+                    && let Some(Modal::Settings(settings_state)) = &mut state.modal
+                {
+                    settings_state.log_file_size = Some(0);
+                }
                 Task::none()
             }
             Message::RevealLogFile => {
@@ -230,9 +231,10 @@ impl FnmUi {
             }
             Message::LogFileStatsLoaded(size) => {
                 if let AppState::Main(state) = &mut self.state
-                    && let Some(Modal::Settings(settings_state)) = &mut state.modal {
-                        settings_state.log_file_size = size;
-                    }
+                    && let Some(Modal::Settings(settings_state)) = &mut state.modal
+                {
+                    settings_state.log_file_size = size;
+                }
                 Task::none()
             }
             Message::ShellFlagsUpdated(_) => Task::none(),
@@ -294,15 +296,16 @@ impl FnmUi {
             }
             Message::OpenAppUpdate => {
                 if let AppState::Main(state) = &self.state
-                    && let Some(update) = &state.app_update {
-                        let url = update.release_url.clone();
-                        return Task::perform(
-                            async move {
-                                let _ = open::that(&url);
-                            },
-                            |_| Message::NoOp,
-                        );
-                    }
+                    && let Some(update) = &state.app_update
+                {
+                    let url = update.release_url.clone();
+                    return Task::perform(
+                        async move {
+                            let _ = open::that(&url);
+                        },
+                        |_| Message::NoOp,
+                    );
+                }
                 Task::none()
             }
             Message::DismissAppUpdate => {
@@ -318,15 +321,16 @@ impl FnmUi {
             }
             Message::OpenFnmUpdate => {
                 if let AppState::Main(state) = &self.state
-                    && let Some(update) = &state.fnm_update {
-                        let url = update.release_url.clone();
-                        return Task::perform(
-                            async move {
-                                let _ = open::that(&url);
-                            },
-                            |_| Message::NoOp,
-                        );
-                    }
+                    && let Some(update) = &state.fnm_update
+                {
+                    let url = update.release_url.clone();
+                    return Task::perform(
+                        async move {
+                            let _ = open::that(&url);
+                        },
+                        |_| Message::NoOp,
+                    );
+                }
                 Task::none()
             }
             Message::OpenLink(url) => Task::perform(
@@ -382,9 +386,10 @@ impl FnmUi {
 
                 if close_modifier
                     && let iced::keyboard::Key::Character(c) = key
-                        && c.as_str() == "w" {
-                            return Some(Message::CloseWindow);
-                        }
+                    && c.as_str() == "w"
+                {
+                    return Some(Message::CloseWindow);
+                }
 
                 None
             } else {
@@ -520,9 +525,10 @@ impl FnmUi {
         }
 
         if let AppState::Main(state) = &mut self.state
-            && let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id) {
-                env.update_versions(versions);
-            }
+            && let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id)
+        {
+            env.update_versions(versions);
+        }
         self.update_tray_menu();
         Task::none()
     }
@@ -531,10 +537,11 @@ impl FnmUi {
         error!("Environment error for {:?}: {}", env_id, error);
 
         if let AppState::Main(state) = &mut self.state
-            && let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id) {
-                env.loading = false;
-                env.error = Some(error);
-            }
+            && let Some(env) = state.environments.iter_mut().find(|e| e.id == env_id)
+        {
+            env.loading = false;
+            env.error = Some(error);
+        }
         Task::none()
     }
 
@@ -689,9 +696,10 @@ impl FnmUi {
         result: Result<versi_core::ReleaseSchedule, String>,
     ) {
         if let AppState::Main(state) = &mut self.state
-            && let Ok(schedule) = result {
-                state.available_versions.schedule = Some(schedule);
-            }
+            && let Ok(schedule) = result
+        {
+            state.available_versions.schedule = Some(schedule);
+        }
     }
 
     fn handle_close_modal(&mut self) {
@@ -731,50 +739,48 @@ impl FnmUi {
             let backend = state.backend.clone();
             let version_clone = version.clone();
 
-            return Task::run(
-                async_stream::stream! {
-                    match backend.install_with_progress(&version_clone).await {
-                        Ok(mut rx) => {
-                            let mut final_success = false;
-                            let mut last_error: Option<String> = None;
-                            while let Some(progress) = rx.recv().await {
-                                let is_complete = progress.phase == versi_core::InstallPhase::Complete;
-                                let is_failed = progress.phase == versi_core::InstallPhase::Failed;
+            let install_stream = async_stream::stream! {
+                match backend.install_with_progress(&version_clone).await {
+                    Ok(mut rx) => {
+                        let mut final_success = false;
+                        let mut last_error: Option<String> = None;
+                        while let Some(progress) = rx.recv().await {
+                            let is_complete = progress.phase == versi_core::InstallPhase::Complete;
+                            let is_failed = progress.phase == versi_core::InstallPhase::Failed;
 
-                                if is_failed {
-                                    last_error = progress.error.clone();
-                                }
-
-                                yield Message::InstallProgress {
-                                    version: version_clone.clone(),
-                                    progress,
-                                };
-
-                                if is_complete {
-                                    final_success = true;
-                                    break;
-                                }
-                                if is_failed {
-                                    break;
-                                }
+                            if is_failed {
+                                last_error = progress.error.clone();
                             }
-                            yield Message::InstallComplete {
+
+                            yield Message::InstallProgress {
                                 version: version_clone.clone(),
-                                success: final_success,
-                                error: if final_success { None } else { last_error.or_else(|| Some("Installation failed".to_string())) },
+                                progress,
                             };
+
+                            if is_complete {
+                                final_success = true;
+                                break;
+                            }
+                            if is_failed {
+                                break;
+                            }
                         }
-                        Err(e) => {
-                            yield Message::InstallComplete {
-                                version: version_clone.clone(),
-                                success: false,
-                                error: Some(e.to_string()),
-                            };
-                        }
+                        yield Message::InstallComplete {
+                            version: version_clone.clone(),
+                            success: final_success,
+                            error: if final_success { None } else { last_error.or_else(|| Some("Installation failed".to_string())) },
+                        };
                     }
-                },
-                |msg| msg,
-            );
+                    Err(e) => {
+                        yield Message::InstallComplete {
+                            version: version_clone.clone(),
+                            success: false,
+                            error: Some(e.to_string()),
+                        };
+                    }
+                }
+            };
+            return Task::run(install_stream, |msg| msg);
         }
         Task::none()
     }
@@ -785,9 +791,9 @@ impl FnmUi {
                 progress: op_progress,
                 ..
             }) = &mut state.operation_queue.current
-            {
-                *op_progress = progress;
-            }
+        {
+            *op_progress = progress;
+        }
     }
 
     fn handle_install_complete(
@@ -997,16 +1003,17 @@ impl FnmUi {
             state.remove_toast(id);
 
             if let Some(toast) = toast
-                && let Some(undo_action) = toast.undo_action {
-                    match undo_action {
-                        UndoAction::Reinstall { version } => {
-                            return self.handle_start_install(version);
-                        }
-                        UndoAction::ResetDefault { version } => {
-                            return self.handle_set_default(version);
-                        }
+                && let Some(undo_action) = toast.undo_action
+            {
+                match undo_action {
+                    UndoAction::Reinstall { version } => {
+                        return self.handle_start_install(version);
+                    }
+                    UndoAction::ResetDefault { version } => {
+                        return self.handle_set_default(version);
                     }
                 }
+            }
         }
         Task::none()
     }
@@ -1016,7 +1023,7 @@ impl FnmUi {
             let env = state.active_environment();
             let remote = &state.available_versions.versions;
 
-            let latest_by_major: std::collections::HashMap<u32, versi_core::NodeVersion> = {
+            let latest_remote_by_major: std::collections::HashMap<u32, versi_core::NodeVersion> = {
                 let mut latest = std::collections::HashMap::new();
                 for v in remote {
                     let major = v.version.major;
@@ -1032,14 +1039,28 @@ impl FnmUi {
                 latest
             };
 
-            let versions_to_update: Vec<(String, String)> = env
-                .installed_versions
+            let latest_installed_by_major: std::collections::HashMap<u32, versi_core::NodeVersion> = {
+                let mut latest = std::collections::HashMap::new();
+                for v in &env.installed_versions {
+                    let major = v.version.major;
+                    latest
+                        .entry(major)
+                        .and_modify(|existing: &mut versi_core::NodeVersion| {
+                            if v.version > *existing {
+                                *existing = v.version.clone();
+                            }
+                        })
+                        .or_insert_with(|| v.version.clone());
+                }
+                latest
+            };
+
+            let versions_to_update: Vec<(String, String)> = latest_installed_by_major
                 .iter()
-                .filter_map(|installed| {
-                    let major = installed.version.major;
-                    latest_by_major.get(&major).and_then(|latest| {
-                        if latest > &installed.version {
-                            Some((installed.version.to_string(), latest.to_string()))
+                .filter_map(|(major, installed)| {
+                    latest_remote_by_major.get(major).and_then(|latest| {
+                        if latest > installed {
+                            Some((installed.to_string(), latest.to_string()))
                         } else {
                             None
                         }
@@ -1117,35 +1138,37 @@ impl FnmUi {
 
     fn handle_confirm_bulk_update_majors(&mut self) -> Task<Message> {
         if let AppState::Main(state) = &mut self.state
-            && let Some(Modal::ConfirmBulkUpdateMajors { versions }) = state.modal.take() {
-                for (_from, to) in versions {
-                    let id = state.operation_queue.next_id();
-                    state.operation_queue.pending.push_back(QueuedOperation {
-                        id,
-                        request: OperationRequest::Install {
-                            version: to.clone(),
-                        },
-                        queued_at: Instant::now(),
-                    });
-                }
-                return self.process_next_operation();
+            && let Some(Modal::ConfirmBulkUpdateMajors { versions }) = state.modal.take()
+        {
+            for (_from, to) in versions {
+                let id = state.operation_queue.next_id();
+                state.operation_queue.pending.push_back(QueuedOperation {
+                    id,
+                    request: OperationRequest::Install {
+                        version: to.clone(),
+                    },
+                    queued_at: Instant::now(),
+                });
             }
+            return self.process_next_operation();
+        }
         Task::none()
     }
 
     fn handle_confirm_bulk_uninstall_eol(&mut self) -> Task<Message> {
         if let AppState::Main(state) = &mut self.state
-            && let Some(Modal::ConfirmBulkUninstallEOL { versions }) = state.modal.take() {
-                for version in versions {
-                    let id = state.operation_queue.next_id();
-                    state.operation_queue.pending.push_back(QueuedOperation {
-                        id,
-                        request: OperationRequest::Uninstall { version },
-                        queued_at: Instant::now(),
-                    });
-                }
-                return self.process_next_operation();
+            && let Some(Modal::ConfirmBulkUninstallEOL { versions }) = state.modal.take()
+        {
+            for version in versions {
+                let id = state.operation_queue.next_id();
+                state.operation_queue.pending.push_back(QueuedOperation {
+                    id,
+                    request: OperationRequest::Uninstall { version },
+                    queued_at: Instant::now(),
+                });
             }
+            return self.process_next_operation();
+        }
         Task::none()
     }
 
@@ -1153,17 +1176,18 @@ impl FnmUi {
         if let AppState::Main(state) = &mut self.state
             && let Some(Modal::ConfirmBulkUninstallMajor { major: m, versions }) =
                 state.modal.take()
-                && m == major {
-                    for version in versions {
-                        let id = state.operation_queue.next_id();
-                        state.operation_queue.pending.push_back(QueuedOperation {
-                            id,
-                            request: OperationRequest::Uninstall { version },
-                            queued_at: Instant::now(),
-                        });
-                    }
-                    return self.process_next_operation();
-                }
+            && m == major
+        {
+            for version in versions {
+                let id = state.operation_queue.next_id();
+                state.operation_queue.pending.push_back(QueuedOperation {
+                    id,
+                    request: OperationRequest::Uninstall { version },
+                    queued_at: Instant::now(),
+                });
+            }
+            return self.process_next_operation();
+        }
         Task::none()
     }
 
@@ -1190,10 +1214,11 @@ impl FnmUi {
 
     fn handle_cancel_queued_operation(&mut self, id: usize) -> Task<Message> {
         if let AppState::Main(state) = &mut self.state
-            && state.operation_queue.cancel_pending(id) {
-                let toast_id = state.next_toast_id();
-                state.add_toast(Toast::success(toast_id, "Operation cancelled".to_string()));
-            }
+            && state.operation_queue.cancel_pending(id)
+        {
+            let toast_id = state.next_toast_id();
+            state.add_toast(Toast::success(toast_id, "Operation cancelled".to_string()));
+        }
         Task::none()
     }
 
@@ -1375,40 +1400,41 @@ impl FnmUi {
         let mut first_detected_options: Option<versi_shell::FnmShellOptions> = None;
 
         if let AppState::Main(state) = &mut self.state
-            && let Some(Modal::Settings(settings_state)) = &mut state.modal {
-                settings_state.checking_shells = false;
-                settings_state.shell_statuses = results
-                    .into_iter()
-                    .map(|(shell_type, result)| {
-                        let status = match result {
-                            versi_shell::VerificationResult::Configured(options) => {
-                                if first_detected_options.is_none() {
-                                    first_detected_options = options;
-                                }
-                                ShellVerificationStatus::Configured
+            && let Some(Modal::Settings(settings_state)) = &mut state.modal
+        {
+            settings_state.checking_shells = false;
+            settings_state.shell_statuses = results
+                .into_iter()
+                .map(|(shell_type, result)| {
+                    let status = match result {
+                        versi_shell::VerificationResult::Configured(options) => {
+                            if first_detected_options.is_none() {
+                                first_detected_options = options;
                             }
-                            versi_shell::VerificationResult::NotConfigured => {
-                                ShellVerificationStatus::NotConfigured
-                            }
-                            versi_shell::VerificationResult::ConfigFileNotFound => {
-                                ShellVerificationStatus::NoConfigFile
-                            }
-                            versi_shell::VerificationResult::FunctionalButNotInConfig => {
-                                ShellVerificationStatus::FunctionalButNotInConfig
-                            }
-                            versi_shell::VerificationResult::Error(e) => {
-                                ShellVerificationStatus::Error(e)
-                            }
-                        };
-                        ShellSetupStatus {
-                            shell_name: shell_type.name().to_string(),
-                            shell_type,
-                            status,
-                            configuring: false,
+                            ShellVerificationStatus::Configured
                         }
-                    })
-                    .collect();
-            }
+                        versi_shell::VerificationResult::NotConfigured => {
+                            ShellVerificationStatus::NotConfigured
+                        }
+                        versi_shell::VerificationResult::ConfigFileNotFound => {
+                            ShellVerificationStatus::NoConfigFile
+                        }
+                        versi_shell::VerificationResult::FunctionalButNotInConfig => {
+                            ShellVerificationStatus::FunctionalButNotInConfig
+                        }
+                        versi_shell::VerificationResult::Error(e) => {
+                            ShellVerificationStatus::Error(e)
+                        }
+                    };
+                    ShellSetupStatus {
+                        shell_name: shell_type.name().to_string(),
+                        shell_type,
+                        status,
+                        configuring: false,
+                    }
+                })
+                .collect();
+        }
 
         if let Some(options) = first_detected_options {
             self.settings.shell_options.use_on_cd = options.use_on_cd;
@@ -1420,13 +1446,13 @@ impl FnmUi {
     fn handle_configure_shell(&mut self, shell_type: versi_shell::ShellType) -> Task<Message> {
         if let AppState::Main(state) = &mut self.state
             && let Some(Modal::Settings(settings_state)) = &mut state.modal
-                && let Some(shell) = settings_state
-                    .shell_statuses
-                    .iter_mut()
-                    .find(|s| s.shell_type == shell_type)
-                {
-                    shell.configuring = true;
-                }
+            && let Some(shell) = settings_state
+                .shell_statuses
+                .iter_mut()
+                .find(|s| s.shell_type == shell_type)
+        {
+            shell.configuring = true;
+        }
 
         let shell_options = versi_shell::FnmShellOptions {
             use_on_cd: self.settings.shell_options.use_on_cd,
@@ -1463,17 +1489,17 @@ impl FnmUi {
     ) {
         if let AppState::Main(state) = &mut self.state
             && let Some(Modal::Settings(settings_state)) = &mut state.modal
-                && let Some(shell) = settings_state
-                    .shell_statuses
-                    .iter_mut()
-                    .find(|s| s.shell_type == shell_type)
-                {
-                    shell.configuring = false;
-                    match result {
-                        Ok(()) => shell.status = ShellVerificationStatus::Configured,
-                        Err(e) => shell.status = ShellVerificationStatus::Error(e),
-                    }
-                }
+            && let Some(shell) = settings_state
+                .shell_statuses
+                .iter_mut()
+                .find(|s| s.shell_type == shell_type)
+        {
+            shell.configuring = false;
+            match result {
+                Ok(()) => shell.status = ShellVerificationStatus::Configured,
+                Err(e) => shell.status = ShellVerificationStatus::Error(e),
+            }
+        }
     }
 
     fn update_shell_flags(&self) -> Task<Message> {
@@ -1494,13 +1520,14 @@ impl FnmUi {
                     if let Some(config_path) = shell.config_file
                         && let Ok(mut config) =
                             ShellConfig::load(shell.shell_type.clone(), config_path)
-                            && config.has_fnm_init() {
-                                let edit = config.update_fnm_flags(&shell_options);
-                                if edit.has_changes() {
-                                    config.apply_edit(&edit).map_err(|e| e.to_string())?;
-                                    updated_count += 1;
-                                }
-                            }
+                        && config.has_fnm_init()
+                    {
+                        let edit = config.update_fnm_flags(&shell_options);
+                        if edit.has_changes() {
+                            config.apply_edit(&edit).map_err(|e| e.to_string())?;
+                            updated_count += 1;
+                        }
+                    }
                 }
 
                 Ok::<_, String>(updated_count)
@@ -1525,13 +1552,14 @@ impl FnmUi {
 
     fn handle_check_for_fnm_update(&mut self) -> Task<Message> {
         if let AppState::Main(state) = &self.state
-            && let Some(version) = &state.active_environment().fnm_version {
-                let version = version.clone();
-                return Task::perform(
-                    async move { check_for_fnm_update(&version).await },
-                    Message::FnmUpdateChecked,
-                );
-            }
+            && let Some(version) = &state.active_environment().fnm_version
+        {
+            let version = version.clone();
+            return Task::perform(
+                async move { check_for_fnm_update(&version).await },
+                Message::FnmUpdateChecked,
+            );
+        }
         Task::none()
     }
 
@@ -1557,12 +1585,13 @@ impl FnmUi {
             TrayMessage::Quit => iced::exit(),
             TrayMessage::SetDefault { env_index, version } => {
                 if let AppState::Main(state) = &mut self.state
-                    && env_index != state.active_environment_idx {
-                        state.active_environment_idx = env_index;
-                        let env = &state.environments[env_index];
-                        let env_id = env.id.clone();
-                        state.backend = create_backend_for_environment(&env_id);
-                    }
+                    && env_index != state.active_environment_idx
+                {
+                    state.active_environment_idx = env_index;
+                    let env = &state.environments[env_index];
+                    let env_id = env.id.clone();
+                    state.backend = create_backend_for_environment(&env_id);
+                }
                 self.handle_set_default(version)
             }
         }
