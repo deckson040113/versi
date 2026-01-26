@@ -41,7 +41,6 @@ pub enum Message {
     CloseModal,
     InstallModalSearchChanged(String),
     OpenChangelog(String),
-    SelectVersionToInstall(String),
     StartInstall(String),
     InstallProgress {
         version: String,
@@ -83,7 +82,6 @@ pub enum Message {
         error: Option<String>,
     },
 
-    ToastTimeout(usize),
     ToastDismiss(usize),
     ToastUndo(usize),
 
@@ -111,7 +109,6 @@ pub enum Message {
     OnboardingFnmInstallResult(Result<(), String>),
     OnboardingConfigureShell(ShellType),
     OnboardingShellConfigResult(Result<(), String>),
-    OnboardingSelectVersion(String),
     OnboardingComplete,
 
     Tick,
@@ -136,7 +133,6 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct InitResult {
     pub fnm_found: bool,
     pub fnm_path: Option<PathBuf>,

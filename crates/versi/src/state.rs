@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::time::Instant;
 use versi_core::{
-    AppUpdate, BackendInfo, FnmUpdate, InstallProgress, InstalledVersion, NodeVersion,
-    ReleaseSchedule, RemoteVersion, VersionGroup, VersionManager,
+    AppUpdate, FnmUpdate, InstallProgress, InstalledVersion, NodeVersion, ReleaseSchedule,
+    RemoteVersion, VersionGroup, VersionManager,
 };
 use versi_platform::EnvironmentId;
 use versi_shell::ShellType;
@@ -17,14 +17,11 @@ pub enum AppState {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct OnboardingState {
     pub step: OnboardingStep,
     pub fnm_installing: bool,
     pub install_error: Option<String>,
     pub detected_shells: Vec<ShellConfigStatus>,
-    pub selected_version: Option<String>,
-    pub available_lts_versions: Vec<RemoteVersion>,
 }
 
 impl OnboardingState {
@@ -34,8 +31,6 @@ impl OnboardingState {
             fnm_installing: false,
             install_error: None,
             detected_shells: Vec::new(),
-            selected_version: None,
-            available_lts_versions: Vec::new(),
         }
     }
 }
@@ -50,7 +45,6 @@ pub enum OnboardingStep {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct ShellConfigStatus {
     pub shell_type: ShellType,
     pub shell_name: String,
@@ -124,16 +118,6 @@ impl MainState {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn backend(&self) -> &dyn VersionManager {
-        self.backend.as_ref()
-    }
-
-    #[allow(dead_code)]
-    pub fn backend_info(&self) -> &BackendInfo {
-        self.backend.backend_info()
-    }
-
     pub fn active_environment(&self) -> &EnvironmentState {
         &self.environments[self.active_environment_idx]
     }
@@ -156,7 +140,6 @@ impl MainState {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct EnvironmentState {
     pub id: EnvironmentId,
     pub name: String,
@@ -204,7 +187,6 @@ pub struct VersionCache {
     pub schedule: Option<ReleaseSchedule>,
 }
 
-#[allow(dead_code)]
 impl VersionCache {
     pub fn new() -> Self {
         Self {
@@ -215,24 +197,9 @@ impl VersionCache {
             schedule: None,
         }
     }
-
-    pub fn is_active(&self, major: u32) -> bool {
-        self.schedule
-            .as_ref()
-            .map(|s| s.is_active(major))
-            .unwrap_or(true)
-    }
-
-    pub fn is_lts(&self, major: u32) -> bool {
-        self.schedule
-            .as_ref()
-            .map(|s| s.is_lts(major))
-            .unwrap_or(major.is_multiple_of(2))
-    }
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum Operation {
     Install {
         version: String,
@@ -243,7 +210,6 @@ pub enum Operation {
     },
     SetDefault {
         version: String,
-        previous: Option<String>,
     },
 }
 
@@ -340,7 +306,7 @@ impl OperationQueue {
             .map(|op| match op {
                 Operation::Install { version: v, .. } => v == version,
                 Operation::Uninstall { version: v } => v == version,
-                Operation::SetDefault { version: v, .. } => v == version,
+                Operation::SetDefault { version: v } => v == version,
             })
             .unwrap_or(false)
     }
@@ -429,13 +395,11 @@ impl SettingsModalState {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct ShellSetupStatus {
     pub shell_type: versi_shell::ShellType,
     pub shell_name: String,
     pub status: ShellVerificationStatus,
     pub configuring: bool,
-    pub detected_options: Option<versi_shell::FnmShellOptions>,
 }
 
 #[derive(Debug, Clone)]
@@ -450,11 +414,9 @@ pub enum ShellVerificationStatus {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct InstallModalState {
     pub search_query: String,
     pub filtered_versions: Vec<RemoteVersion>,
-    pub selected_version: Option<String>,
     pub loading: bool,
     pub schedule: Option<ReleaseSchedule>,
 }
@@ -464,7 +426,6 @@ impl InstallModalState {
         Self {
             search_query: String::new(),
             filtered_versions: Vec::new(),
-            selected_version: None,
             loading: false,
             schedule: None,
         }

@@ -398,25 +398,6 @@ pub mod styles {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn badge_update(_theme: &Theme) -> container::Style {
-        let update_color = Color::from_rgb8(0, 122, 255);
-
-        container::Style {
-            background: Some(Background::Color(Color {
-                a: 0.15,
-                ..update_color
-            })),
-            text_color: Some(update_color),
-            border: Border {
-                radius: 6.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            ..Default::default()
-        }
-    }
-
     pub fn update_badge_button(_theme: &Theme, status: button::Status) -> button::Style {
         let update_color = Color::from_rgb8(0, 122, 255);
 

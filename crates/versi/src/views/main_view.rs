@@ -215,7 +215,7 @@ fn current_operation_view(op: &Operation) -> Element<'_, Message> {
         Operation::Uninstall { version } => text(format!("Removing Node {}...", version))
             .size(14)
             .into(),
-        Operation::SetDefault { version, .. } => text(format!("Setting default to {}...", version))
+        Operation::SetDefault { version } => text(format!("Setting default to {}...", version))
             .size(14)
             .into(),
     }

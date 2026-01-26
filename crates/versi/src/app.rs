@@ -157,7 +157,7 @@ impl FnmUi {
                 success,
                 error,
             } => self.handle_default_changed(version, previous, success, error),
-            Message::ToastTimeout(id) | Message::ToastDismiss(id) => {
+            Message::ToastDismiss(id) => {
                 if let AppState::Main(state) = &mut self.state {
                     state.remove_toast(id);
                 }
@@ -1014,7 +1014,6 @@ impl FnmUi {
 
             state.operation_queue.current = Some(Operation::SetDefault {
                 version: version.clone(),
-                previous: previous.clone(),
             });
 
             let backend = state.backend.clone();
@@ -1465,24 +1464,24 @@ impl FnmUi {
                 settings_state.shell_statuses = results
                     .into_iter()
                     .map(|(shell_type, result)| {
-                        let (status, detected_options) = match result {
+                        let status = match result {
                             versi_shell::VerificationResult::Configured(options) => {
                                 if first_detected_options.is_none() {
-                                    first_detected_options = options.clone();
+                                    first_detected_options = options;
                                 }
-                                (ShellVerificationStatus::Configured, options)
+                                ShellVerificationStatus::Configured
                             }
                             versi_shell::VerificationResult::NotConfigured => {
-                                (ShellVerificationStatus::NotConfigured, None)
+                                ShellVerificationStatus::NotConfigured
                             }
                             versi_shell::VerificationResult::ConfigFileNotFound => {
-                                (ShellVerificationStatus::NoConfigFile, None)
+                                ShellVerificationStatus::NoConfigFile
                             }
                             versi_shell::VerificationResult::FunctionalButNotInConfig => {
-                                (ShellVerificationStatus::FunctionalButNotInConfig, None)
+                                ShellVerificationStatus::FunctionalButNotInConfig
                             }
                             versi_shell::VerificationResult::Error(e) => {
-                                (ShellVerificationStatus::Error(e), None)
+                                ShellVerificationStatus::Error(e)
                             }
                         };
                         ShellSetupStatus {
@@ -1490,7 +1489,6 @@ impl FnmUi {
                             shell_type,
                             status,
                             configuring: false,
-                            detected_options,
                         }
                     })
                     .collect();
