@@ -153,7 +153,7 @@ See [AGENTS.md](AGENTS.md) for detailed development documentation.
 
 ## License
 
-MIT License - see [LICENSE.md](LICENSE.md) for details.
+GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
