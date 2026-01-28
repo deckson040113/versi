@@ -54,9 +54,6 @@ impl FnmUi {
     pub fn new() -> (Self, Task<Message>) {
         let settings = AppSettings::load();
 
-        let hide_dock =
-            settings.start_minimized && settings.tray_behavior != TrayBehavior::Disabled;
-
         let app = Self {
             state: AppState::Loading,
             settings,
@@ -65,13 +62,7 @@ impl FnmUi {
 
         let init_task = Task::perform(initialize(), Message::Initialized);
 
-        let dock_task = if hide_dock {
-            Task::done(Message::HideDockIcon)
-        } else {
-            Task::none()
-        };
-
-        (app, Task::batch([init_task, dock_task]))
+        (app, init_task)
     }
 
     pub fn title(&self) -> String {
