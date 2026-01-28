@@ -634,14 +634,16 @@ impl FnmUi {
             let new_backend = create_backend_for_environment(&env_id);
             state.backend = new_backend;
 
-            if needs_load {
+            state.fnm_update = None;
+
+            let load_task = if needs_load {
                 info!("Loading versions for environment: {:?}", env_id);
                 let env = state.active_environment_mut();
                 env.loading = true;
 
                 let backend = state.backend.clone();
 
-                return Task::perform(
+                Task::perform(
                     async move {
                         debug!("Fetching installed versions for {:?}...", env_id);
                         let versions = backend.list_installed().await.unwrap_or_default();
@@ -660,8 +662,13 @@ impl FnmUi {
                         versions,
                         default_version: default,
                     },
-                );
-            }
+                )
+            } else {
+                Task::none()
+            };
+
+            let fnm_update_task = self.handle_check_for_fnm_update();
+            return Task::batch([load_task, fnm_update_task]);
         }
         Task::none()
     }
