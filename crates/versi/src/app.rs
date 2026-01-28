@@ -1776,6 +1776,31 @@ impl FnmUi {
                     Task::none()
                 }
             }
+            TrayMessage::OpenSettings => {
+                if let AppState::Main(state) = &mut self.state {
+                    state.view = MainViewKind::Settings;
+                    state.settings_state.checking_shells = true;
+                }
+                let show_task = if let Some(id) = self.window_id {
+                    set_dock_visible(true);
+                    Task::batch([
+                        iced::window::set_mode(id, iced::window::Mode::Windowed),
+                        iced::window::minimize(id, false),
+                        iced::window::gain_focus(id),
+                    ])
+                } else {
+                    Task::none()
+                };
+                let shell_task = self.handle_check_shell_setup();
+                let log_stats_task = Task::perform(
+                    async {
+                        let log_path = versi_platform::AppPaths::new().log_file();
+                        std::fs::metadata(&log_path).ok().map(|m| m.len())
+                    },
+                    Message::LogFileStatsLoaded,
+                );
+                Task::batch([show_task, shell_task, log_stats_task])
+            }
             TrayMessage::Quit => iced::exit(),
             TrayMessage::SetDefault { env_index, version } => {
                 if let AppState::Main(state) = &mut self.state
