@@ -1430,11 +1430,27 @@ impl FnmUi {
     }
 
     fn handle_check_shell_setup(&mut self) -> Task<Message> {
-        use versi_shell::{detect_shells, verify_shell_config};
+        #[cfg(target_os = "windows")]
+        use versi_shell::detect_wsl_shells;
+        use versi_shell::{detect_native_shells, verify_shell_config};
+
+        #[allow(unused_variables)]
+        let env_id = if let AppState::Main(state) = &self.state {
+            Some(state.active_environment().id.clone())
+        } else {
+            None
+        };
 
         Task::perform(
             async move {
-                let shells = detect_shells();
+                #[cfg(target_os = "windows")]
+                let shells = match env_id {
+                    Some(EnvironmentId::Wsl { distro, .. }) => detect_wsl_shells(&distro),
+                    _ => detect_native_shells(),
+                };
+                #[cfg(not(target_os = "windows"))]
+                let shells = detect_native_shells();
+
                 let mut results = Vec::new();
 
                 for shell in shells {

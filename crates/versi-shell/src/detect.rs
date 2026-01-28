@@ -132,6 +132,10 @@ pub struct ShellInfo {
 }
 
 pub fn detect_shells() -> Vec<ShellInfo> {
+    detect_native_shells()
+}
+
+pub fn detect_native_shells() -> Vec<ShellInfo> {
     let mut shells = Vec::new();
 
     #[cfg(unix)]
@@ -188,6 +192,63 @@ pub fn detect_shells() -> Vec<ShellInfo> {
     }
 
     shells
+}
+
+#[cfg(target_os = "windows")]
+pub fn detect_wsl_shells(distro: &str) -> Vec<ShellInfo> {
+    use std::process::Command;
+
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    use std::os::windows::process::CommandExt;
+
+    let mut shells = Vec::new();
+
+    let check_shells_script = r#"
+        for shell in bash zsh fish; do
+            if command -v "$shell" >/dev/null 2>&1; then
+                echo "$shell:$(command -v "$shell")"
+            fi
+        done
+    "#;
+
+    let output = Command::new("wsl.exe")
+        .args(["-d", distro, "--", "sh", "-c", check_shells_script])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
+
+    if let Ok(output) = output {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                let parts: Vec<&str> = line.split(':').collect();
+                if parts.len() >= 2 {
+                    let shell_name = parts[0].trim();
+                    let shell_path = parts[1].trim();
+
+                    let shell_type = match shell_name {
+                        "bash" => ShellType::Bash,
+                        "zsh" => ShellType::Zsh,
+                        "fish" => ShellType::Fish,
+                        _ => continue,
+                    };
+
+                    shells.push(ShellInfo {
+                        shell_type,
+                        path: Some(PathBuf::from(shell_path)),
+                        config_file: None,
+                        is_configured: false,
+                    });
+                }
+            }
+        }
+    }
+
+    shells
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn detect_wsl_shells(_distro: &str) -> Vec<ShellInfo> {
+    Vec::new()
 }
 
 fn find_existing_config(shell: &ShellType) -> Option<PathBuf> {
