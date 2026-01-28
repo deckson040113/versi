@@ -26,11 +26,14 @@ pub fn view<'a>(state: &'a MainState, settings: &'a AppSettings) -> Element<'a, 
 
     let mut main_column = column![].spacing(0);
 
-    if let Some(tabs) = environment_tabs_view(state) {
+    let has_tabs = if let Some(tabs) = environment_tabs_view(state) {
         main_column = main_column.push(
             container(tabs).padding(iced::Padding::new(0.0).top(16.0).left(32.0).right(32.0)),
         );
-    }
+        true
+    } else {
+        false
+    };
 
     let mut content_column = column![header, search_bar].spacing(20);
 
@@ -40,7 +43,12 @@ pub fn view<'a>(state: &'a MainState, settings: &'a AppSettings) -> Element<'a, 
 
     content_column = content_column.push(version_list);
 
-    let main_content = content_column.padding(32);
+    let content_padding = if has_tabs {
+        iced::Padding::new(32.0)
+    } else {
+        iced::Padding::new(32.0).top(16.0)
+    };
+    let main_content = content_column.padding(content_padding);
 
     main_column = main_column.push(main_content);
 
