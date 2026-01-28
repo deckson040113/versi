@@ -42,6 +42,7 @@ pub struct WslDistro {
     pub is_default: bool,
     pub version: u8,
     pub fnm_path: Option<String>,
+    pub is_running: bool,
 }
 
 #[derive(Error, Debug)]
@@ -58,10 +59,13 @@ pub enum WslError {
 
 pub fn detect_wsl_distros() -> Vec<WslDistro> {
     info!("Detecting WSL distros...");
-    debug!("Running: wsl.exe --list --running --verbose");
 
+    let running_distros = get_running_distro_names();
+    debug!("Running distros: {:?}", running_distros);
+
+    debug!("Running: wsl.exe --list --verbose");
     let output = Command::new("wsl.exe")
-        .args(["--list", "--running", "--verbose"])
+        .args(["--list", "--verbose"])
         .hide_window()
         .output();
 
@@ -78,23 +82,28 @@ pub fn detect_wsl_distros() -> Vec<WslDistro> {
                 let stdout = decode_wsl_output(&output.stdout);
                 debug!("Decoded WSL output:\n{}", stdout);
 
-                let mut distros = parse_wsl_list(&stdout);
-                info!("Found {} WSL distros before fnm detection", distros.len());
+                let mut distros = parse_wsl_list(&stdout, &running_distros);
+                info!("Found {} WSL distros", distros.len());
 
                 for distro in &mut distros {
-                    debug!("Checking for fnm in distro: {}", distro.name);
-                    distro.fnm_path = find_fnm_path(&distro.name);
-                    if let Some(ref path) = distro.fnm_path {
-                        info!("Found fnm in {}: {}", distro.name, path);
+                    if distro.is_running {
+                        debug!("Checking for fnm in running distro: {}", distro.name);
+                        distro.fnm_path = find_fnm_path(&distro.name);
+                        if let Some(ref path) = distro.fnm_path {
+                            info!("Found fnm in {}: {}", distro.name, path);
+                        } else {
+                            warn!("fnm not found in distro: {}", distro.name);
+                        }
                     } else {
-                        warn!("fnm not found in distro: {}", distro.name);
+                        debug!("Skipping fnm check for non-running distro: {}", distro.name);
                     }
                 }
 
                 let with_fnm: Vec<_> = distros.iter().filter(|d| d.fnm_path.is_some()).collect();
                 info!(
-                    "WSL detection complete: {} distros with fnm out of {} total",
+                    "WSL detection complete: {} distros with fnm, {} running, {} total",
                     with_fnm.len(),
+                    distros.iter().filter(|d| d.is_running).count(),
                     distros.len()
                 );
                 distros
@@ -111,6 +120,25 @@ pub fn detect_wsl_distros() -> Vec<WslDistro> {
             error!("Failed to execute wsl.exe: {}", e);
             Vec::new()
         }
+    }
+}
+
+fn get_running_distro_names() -> Vec<String> {
+    let output = Command::new("wsl.exe")
+        .args(["--list", "--running", "--quiet"])
+        .hide_window()
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            let stdout = decode_wsl_output(&output.stdout);
+            stdout
+                .lines()
+                .map(|line| line.trim().replace('\0', ""))
+                .filter(|line| !line.is_empty())
+                .collect()
+        }
+        _ => Vec::new(),
     }
 }
 
@@ -199,7 +227,7 @@ fn decode_wsl_output(bytes: &[u8]) -> String {
     String::from_utf8_lossy(bytes).to_string()
 }
 
-fn parse_wsl_list(output: &str) -> Vec<WslDistro> {
+fn parse_wsl_list(output: &str, running_distros: &[String]) -> Vec<WslDistro> {
     output
         .lines()
         .skip(1)
@@ -214,18 +242,24 @@ fn parse_wsl_list(output: &str) -> Vec<WslDistro> {
 
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() >= 3 {
+                let name = parts[0].to_string();
+                let is_running = running_distros.iter().any(|r| r == &name);
                 Some(WslDistro {
-                    name: parts[0].to_string(),
+                    name,
                     is_default,
                     version: parts[2].parse().unwrap_or(2),
                     fnm_path: None,
+                    is_running,
                 })
             } else if !parts.is_empty() {
+                let name = parts[0].to_string();
+                let is_running = running_distros.iter().any(|r| r == &name);
                 Some(WslDistro {
-                    name: parts[0].to_string(),
+                    name,
                     is_default,
                     version: 2,
                     fnm_path: None,
+                    is_running,
                 })
             } else {
                 None

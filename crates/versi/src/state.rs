@@ -149,6 +149,7 @@ pub struct EnvironmentState {
     pub fnm_version: Option<String>,
     pub loading: bool,
     pub error: Option<String>,
+    pub available: bool,
 }
 
 impl EnvironmentState {
@@ -163,6 +164,22 @@ impl EnvironmentState {
             fnm_version,
             loading: true,
             error: None,
+            available: true,
+        }
+    }
+
+    pub fn unavailable(id: EnvironmentId, reason: &str) -> Self {
+        let name = id.display_name();
+        Self {
+            id,
+            name,
+            installed_versions: Vec::new(),
+            version_groups: Vec::new(),
+            default_version: None,
+            fnm_version: None,
+            loading: false,
+            error: Some(reason.to_string()),
+            available: false,
         }
     }
 

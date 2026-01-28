@@ -144,4 +144,6 @@ pub struct InitResult {
 pub struct EnvironmentInfo {
     pub id: EnvironmentId,
     pub fnm_version: Option<String>,
+    pub available: bool,
+    pub unavailable_reason: Option<String>,
 }

@@ -578,4 +578,23 @@ pub mod styles {
             button::Status::Disabled => base,
         }
     }
+
+    pub fn disabled_tab_button(theme: &Theme, _status: button::Status) -> button::Style {
+        let palette = theme.palette();
+
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: Color {
+                a: 0.35,
+                ..palette.text
+            },
+            border: Border {
+                radius: 6.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow::default(),
+            snap: false,
+        }
+    }
 }

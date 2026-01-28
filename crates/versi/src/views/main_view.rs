@@ -147,6 +147,19 @@ fn environment_tabs_view<'a>(state: &'a MainState) -> Option<Element<'a, Message
         .enumerate()
         .map(|(idx, env)| {
             let is_active = idx == state.active_environment_idx;
+
+            if !env.available {
+                let label = if let Some(reason) = &env.error {
+                    format!("{} ({})", env.name, reason)
+                } else {
+                    format!("{} (Unavailable)", env.name)
+                };
+                return button(text(label).size(13))
+                    .style(styles::disabled_tab_button)
+                    .padding([8, 16])
+                    .into();
+            }
+
             let style = if is_active {
                 styles::active_tab_button
             } else {

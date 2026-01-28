@@ -502,7 +502,17 @@ impl FnmUi {
             .environments
             .iter()
             .map(|env_info| {
-                EnvironmentState::new(env_info.id.clone(), env_info.fnm_version.clone())
+                if env_info.available {
+                    EnvironmentState::new(env_info.id.clone(), env_info.fnm_version.clone())
+                } else {
+                    EnvironmentState::unavailable(
+                        env_info.id.clone(),
+                        env_info
+                            .unavailable_reason
+                            .as_deref()
+                            .unwrap_or("Unavailable"),
+                    )
+                }
             })
             .collect();
 
@@ -511,6 +521,14 @@ impl FnmUi {
         let mut load_tasks: Vec<Task<Message>> = Vec::new();
 
         for env_info in &result.environments {
+            if !env_info.available {
+                debug!(
+                    "Skipping load for unavailable environment: {:?}",
+                    env_info.id
+                );
+                continue;
+            }
+
             let env_id = env_info.id.clone();
             let backend = create_backend_for_environment(&env_id);
 
@@ -1677,6 +1695,8 @@ async fn initialize() -> InitResult {
     let mut environments = vec![EnvironmentInfo {
         id: EnvironmentId::Native,
         fnm_version: detection.version.clone(),
+        available: true,
+        unavailable_reason: None,
     }];
 
     #[cfg(windows)]
@@ -1690,7 +1710,21 @@ async fn initialize() -> InitResult {
         );
 
         for distro in distros {
-            if let Some(fnm_path) = distro.fnm_path {
+            if !distro.is_running {
+                info!(
+                    "Adding unavailable WSL environment: {} (not running)",
+                    distro.name
+                );
+                environments.push(EnvironmentInfo {
+                    id: EnvironmentId::Wsl {
+                        distro: distro.name,
+                        fnm_path: String::new(),
+                    },
+                    fnm_version: None,
+                    available: false,
+                    unavailable_reason: Some("Not running".to_string()),
+                });
+            } else if let Some(fnm_path) = distro.fnm_path {
                 info!(
                     "Adding WSL environment: {} (fnm at {})",
                     distro.name, fnm_path
@@ -1702,9 +1736,23 @@ async fn initialize() -> InitResult {
                         fnm_path,
                     },
                     fnm_version,
+                    available: true,
+                    unavailable_reason: None,
                 });
             } else {
-                debug!("Skipping WSL distro {} (no fnm found)", distro.name);
+                info!(
+                    "Adding unavailable WSL environment: {} (fnm not found)",
+                    distro.name
+                );
+                environments.push(EnvironmentInfo {
+                    id: EnvironmentId::Wsl {
+                        distro: distro.name,
+                        fnm_path: String::new(),
+                    },
+                    fnm_version: None,
+                    available: false,
+                    unavailable_reason: Some("fnm not installed".to_string()),
+                });
             }
         }
     }
