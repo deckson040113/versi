@@ -27,6 +27,13 @@ fn main() -> iced::Result {
 
     log::info!("Versi {} starting", env!("CARGO_PKG_VERSION"));
 
+    #[cfg(target_os = "linux")]
+    {
+        if let Err(e) = gtk::init() {
+            log::warn!("Failed to initialize GTK: {}", e);
+        }
+    }
+
     if let Err(e) = tray::init_tray(&settings.tray_behavior) {
         log::warn!("Failed to initialize tray icon: {}", e);
     }
