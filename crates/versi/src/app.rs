@@ -1336,7 +1336,9 @@ impl FnmUi {
                 return Task::none();
             }
 
-            let latest = versions_in_major.first().unwrap();
+            let Some(latest) = versions_in_major.first() else {
+                return Task::none();
+            };
             let keeping = latest.version.to_string();
 
             let versions: Vec<String> = versions_in_major
@@ -1397,8 +1399,8 @@ impl FnmUi {
                     _ => {
                         if state.operation_queue.active_installs.is_empty()
                             && install_versions.is_empty()
+                            && let Some(queued) = state.operation_queue.pending.pop_front()
                         {
-                            let queued = state.operation_queue.pending.pop_front().unwrap();
                             exclusive_request = Some(queued.request);
                         }
                         break;
