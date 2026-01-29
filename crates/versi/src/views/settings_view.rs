@@ -1,4 +1,4 @@
-use iced::widget::{Space, button, column, row, scrollable, text, toggler};
+use iced::widget::{Space, button, column, row, scrollable, text, toggler, tooltip};
 use iced::{Alignment, Element, Length};
 
 use crate::message::Message;
@@ -12,10 +12,14 @@ pub fn view<'a>(
     _state: &'a MainState,
 ) -> Element<'a, Message> {
     let header = row![
-        button(text("\u{2190}").size(16))
-            .on_press(Message::NavigateToVersions)
-            .style(styles::ghost_button)
-            .padding([4, 8]),
+        tooltip(
+            button(text("\u{2190}").size(16))
+                .on_press(Message::NavigateToVersions)
+                .style(styles::ghost_button)
+                .padding([4, 8]),
+            text("Back").size(12),
+            tooltip::Position::Bottom,
+        ),
         text("Settings").size(22),
         Space::new().width(Length::Fill),
     ]

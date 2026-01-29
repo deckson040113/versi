@@ -1,4 +1,4 @@
-use iced::widget::{Space, button, column, container, mouse_area, row, text, text_input};
+use iced::widget::{Space, button, column, container, mouse_area, row, text, text_input, tooltip};
 use iced::{Alignment, Element, Length};
 
 use crate::message::Message;
@@ -116,19 +116,23 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
         );
     }
 
-    icon_row = icon_row.push(
+    icon_row = icon_row.push(tooltip(
         button(text("\u{21bb}").size(16))
             .on_press(Message::RefreshEnvironment)
             .style(styles::ghost_button)
             .padding([6, 8]),
-    );
+        text("Refresh").size(12),
+        tooltip::Position::Bottom,
+    ));
 
-    icon_row = icon_row.push(
+    icon_row = icon_row.push(tooltip(
         button(text("\u{2699}").size(16))
             .on_press(Message::NavigateToSettings)
             .style(styles::ghost_button)
             .padding([6, 8]),
-    );
+        text("Settings").size(12),
+        tooltip::Position::Bottom,
+    ));
 
     row![title_section, Space::new().width(Length::Fill), icon_row,]
         .align_y(Alignment::Center)
@@ -148,11 +152,15 @@ fn search_bar_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     let clear_btn: Element<Message> = if state.search_query.is_empty() {
         Space::new().into()
     } else {
-        button(text("\u{2715}").size(14))
-            .on_press(Message::SearchChanged(String::new()))
-            .style(styles::ghost_button)
-            .padding([6, 10])
-            .into()
+        tooltip(
+            button(text("\u{2715}").size(14))
+                .on_press(Message::SearchChanged(String::new()))
+                .style(styles::ghost_button)
+                .padding([6, 10]),
+            text("Clear search").size(12),
+            tooltip::Position::Left,
+        )
+        .into()
     };
 
     iced::widget::stack![
