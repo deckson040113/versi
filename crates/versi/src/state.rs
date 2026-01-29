@@ -221,6 +221,16 @@ pub struct VersionCache {
     pub loading: bool,
     pub error: Option<String>,
     pub schedule: Option<ReleaseSchedule>,
+    pub schedule_error: Option<String>,
+    pub loaded_from_disk: bool,
+}
+
+#[allow(dead_code)]
+pub enum NetworkStatus {
+    Online,
+    Fetching,
+    Offline(String),
+    Stale(String),
 }
 
 impl VersionCache {
@@ -231,7 +241,22 @@ impl VersionCache {
             loading: false,
             error: None,
             schedule: None,
+            schedule_error: None,
+            loaded_from_disk: false,
         }
+    }
+
+    pub fn network_status(&self) -> NetworkStatus {
+        if self.loading {
+            return NetworkStatus::Fetching;
+        }
+        if let Some(err) = &self.error {
+            if self.versions.is_empty() {
+                return NetworkStatus::Offline(err.clone());
+            }
+            return NetworkStatus::Stale(err.clone());
+        }
+        NetworkStatus::Online
     }
 }
 

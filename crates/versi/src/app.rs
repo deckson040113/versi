@@ -53,6 +53,7 @@ pub struct FnmUi {
     fnm_dir: Option<PathBuf>,
     window_size: Option<iced::Size>,
     window_position: Option<iced::Point>,
+    http_client: reqwest::Client,
 }
 
 impl FnmUi {
@@ -61,6 +62,12 @@ impl FnmUi {
 
         let should_minimize =
             settings.start_minimized && settings.tray_behavior != TrayBehavior::Disabled;
+
+        let http_client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .user_agent(format!("versi/{}", env!("CARGO_PKG_VERSION")))
+            .build()
+            .unwrap_or_default();
 
         let app = Self {
             state: AppState::Loading,
@@ -71,6 +78,7 @@ impl FnmUi {
             fnm_dir: None,
             window_size: None,
             window_position: None,
+            http_client,
         };
 
         let init_task = Task::perform(initialize(), Message::Initialized);
@@ -372,8 +380,8 @@ impl FnmUi {
             }
             Message::WindowEvent(_) => Task::none(),
             Message::CheckForAppUpdate => self.handle_check_for_app_update(),
-            Message::AppUpdateChecked(update) => {
-                self.handle_app_update_checked(update);
+            Message::AppUpdateChecked(result) => {
+                self.handle_app_update_checked(result);
                 Task::none()
             }
             Message::OpenAppUpdate => {
@@ -397,10 +405,11 @@ impl FnmUi {
                 Task::none()
             }
             Message::CheckForFnmUpdate => self.handle_check_for_fnm_update(),
-            Message::FnmUpdateChecked(update) => {
-                self.handle_fnm_update_checked(update);
+            Message::FnmUpdateChecked(result) => {
+                self.handle_fnm_update_checked(result);
                 Task::none()
             }
+            Message::FetchReleaseSchedule => self.handle_fetch_release_schedule(),
             Message::OpenFnmUpdate => {
                 if let AppState::Main(state) = &self.state
                     && let Some(update) = &state.fnm_update
@@ -583,7 +592,25 @@ impl FnmUi {
             })
             .collect();
 
-        self.state = AppState::Main(MainState::new_with_environments(backend, environments));
+        let mut main_state = MainState::new_with_environments(backend, environments);
+
+        if let Some(disk_cache) = crate::cache::DiskCache::load() {
+            debug!(
+                "Loaded disk cache from {:?} ({} versions, schedule={})",
+                disk_cache.cached_at,
+                disk_cache.remote_versions.len(),
+                disk_cache.release_schedule.is_some()
+            );
+            if !disk_cache.remote_versions.is_empty() {
+                main_state.available_versions.versions = disk_cache.remote_versions;
+                main_state.available_versions.loaded_from_disk = true;
+            }
+            if let Some(schedule) = disk_cache.release_schedule {
+                main_state.available_versions.schedule = Some(schedule);
+            }
+        }
+
+        self.state = AppState::Main(main_state);
 
         let mut load_tasks: Vec<Task<Message>> = Vec::new();
 
@@ -792,7 +819,27 @@ impl FnmUi {
             let backend = state.backend.clone();
 
             return Task::perform(
-                async move { backend.list_remote().await.map_err(|e| e.to_string()) },
+                async move {
+                    let delays = [0, 2, 5, 15];
+                    let mut last_err = String::new();
+                    for (attempt, &delay) in delays.iter().enumerate() {
+                        if delay > 0 {
+                            tokio::time::sleep(std::time::Duration::from_secs(delay)).await;
+                        }
+                        match backend.list_remote().await {
+                            Ok(versions) => return Ok(versions),
+                            Err(e) => {
+                                last_err = e.to_string();
+                                debug!(
+                                    "Remote versions fetch attempt {} failed: {}",
+                                    attempt + 1,
+                                    last_err
+                                );
+                            }
+                        }
+                    }
+                    Err(last_err)
+                },
                 Message::RemoteVersionsFetched,
             );
         }
@@ -807,9 +854,20 @@ impl FnmUi {
             state.available_versions.loading = false;
             match result {
                 Ok(versions) => {
-                    state.available_versions.versions = versions;
+                    state.available_versions.versions = versions.clone();
                     state.available_versions.fetched_at = Some(Instant::now());
                     state.available_versions.error = None;
+                    state.available_versions.loaded_from_disk = false;
+
+                    let schedule = state.available_versions.schedule.clone();
+                    std::thread::spawn(move || {
+                        let cache = crate::cache::DiskCache {
+                            remote_versions: versions,
+                            release_schedule: schedule,
+                            cached_at: chrono::Utc::now(),
+                        };
+                        cache.save();
+                    });
                 }
                 Err(error) => {
                     state.available_versions.error = Some(error);
@@ -819,13 +877,31 @@ impl FnmUi {
     }
 
     fn handle_fetch_release_schedule(&mut self) -> Task<Message> {
-        if let AppState::Main(state) = &mut self.state {
-            if state.available_versions.schedule.is_some() {
-                return Task::none();
-            }
+        if let AppState::Main(_) = &self.state {
+            let client = self.http_client.clone();
 
             return Task::perform(
-                async move { fetch_release_schedule().await },
+                async move {
+                    let delays = [0, 2, 5, 15];
+                    let mut last_err = String::new();
+                    for (attempt, &delay) in delays.iter().enumerate() {
+                        if delay > 0 {
+                            tokio::time::sleep(std::time::Duration::from_secs(delay)).await;
+                        }
+                        match fetch_release_schedule(&client).await {
+                            Ok(schedule) => return Ok(schedule),
+                            Err(e) => {
+                                last_err = e;
+                                debug!(
+                                    "Release schedule fetch attempt {} failed: {}",
+                                    attempt + 1,
+                                    last_err
+                                );
+                            }
+                        }
+                    }
+                    Err(last_err)
+                },
                 Message::ReleaseScheduleFetched,
             );
         }
@@ -836,10 +912,27 @@ impl FnmUi {
         &mut self,
         result: Result<versi_core::ReleaseSchedule, String>,
     ) {
-        if let AppState::Main(state) = &mut self.state
-            && let Ok(schedule) = result
-        {
-            state.available_versions.schedule = Some(schedule);
+        if let AppState::Main(state) = &mut self.state {
+            match result {
+                Ok(schedule) => {
+                    state.available_versions.schedule = Some(schedule.clone());
+                    state.available_versions.schedule_error = None;
+
+                    let versions = state.available_versions.versions.clone();
+                    std::thread::spawn(move || {
+                        let cache = crate::cache::DiskCache {
+                            remote_versions: versions,
+                            release_schedule: Some(schedule),
+                            cached_at: chrono::Utc::now(),
+                        };
+                        cache.save();
+                    });
+                }
+                Err(error) => {
+                    debug!("Release schedule fetch failed: {}", error);
+                    state.available_versions.schedule_error = Some(error);
+                }
+            }
         }
     }
 
@@ -1818,15 +1911,19 @@ impl FnmUi {
 
     fn handle_check_for_app_update(&mut self) -> Task<Message> {
         let current_version = env!("CARGO_PKG_VERSION").to_string();
+        let client = self.http_client.clone();
         Task::perform(
-            async move { check_for_update(&current_version).await },
+            async move { check_for_update(&client, &current_version).await },
             Message::AppUpdateChecked,
         )
     }
 
-    fn handle_app_update_checked(&mut self, update: Option<versi_core::AppUpdate>) {
+    fn handle_app_update_checked(&mut self, result: Result<Option<versi_core::AppUpdate>, String>) {
         if let AppState::Main(state) = &mut self.state {
-            state.app_update = update;
+            match result {
+                Ok(update) => state.app_update = update,
+                Err(e) => debug!("App update check failed: {}", e),
+            }
         }
     }
 
@@ -1835,17 +1932,21 @@ impl FnmUi {
             && let Some(version) = &state.active_environment().fnm_version
         {
             let version = version.clone();
+            let client = self.http_client.clone();
             return Task::perform(
-                async move { check_for_fnm_update(&version).await },
+                async move { check_for_fnm_update(&client, &version).await },
                 Message::FnmUpdateChecked,
             );
         }
         Task::none()
     }
 
-    fn handle_fnm_update_checked(&mut self, update: Option<versi_core::FnmUpdate>) {
+    fn handle_fnm_update_checked(&mut self, result: Result<Option<versi_core::FnmUpdate>, String>) {
         if let AppState::Main(state) = &mut self.state {
-            state.fnm_update = update;
+            match result {
+                Ok(update) => state.fnm_update = update,
+                Err(e) => debug!("fnm update check failed: {}", e),
+            }
         }
     }
 

@@ -25,25 +25,30 @@ struct GitHubRelease {
     body: Option<String>,
 }
 
-pub async fn check_for_update(current_version: &str) -> Option<AppUpdate> {
+pub async fn check_for_update(
+    client: &reqwest::Client,
+    current_version: &str,
+) -> Result<Option<AppUpdate>, String> {
     let url = format!(
         "https://api.github.com/repos/{}/releases/latest",
         GITHUB_REPO
     );
 
-    let client = reqwest::Client::new();
     let response = client
         .get(&url)
         .header("User-Agent", "versi")
         .send()
         .await
-        .ok()?;
+        .map_err(|e| format!("Failed to check for app update: {}", e))?;
 
     if !response.status().is_success() {
-        return None;
+        return Ok(None);
     }
 
-    let release: GitHubRelease = response.json().await.ok()?;
+    let release: GitHubRelease = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse app update response: {}", e))?;
 
     let latest = release
         .tag_name
@@ -52,36 +57,41 @@ pub async fn check_for_update(current_version: &str) -> Option<AppUpdate> {
     let current = current_version.strip_prefix('v').unwrap_or(current_version);
 
     if is_newer_version(latest, current) {
-        Some(AppUpdate {
+        Ok(Some(AppUpdate {
             current_version: current.to_string(),
             latest_version: latest.to_string(),
             release_url: release.html_url,
             release_notes: release.body,
-        })
+        }))
     } else {
-        None
+        Ok(None)
     }
 }
 
-pub async fn check_for_fnm_update(current_version: &str) -> Option<FnmUpdate> {
+pub async fn check_for_fnm_update(
+    client: &reqwest::Client,
+    current_version: &str,
+) -> Result<Option<FnmUpdate>, String> {
     let url = format!(
         "https://api.github.com/repos/{}/releases/latest",
         FNM_GITHUB_REPO
     );
 
-    let client = reqwest::Client::new();
     let response = client
         .get(&url)
         .header("User-Agent", "versi")
         .send()
         .await
-        .ok()?;
+        .map_err(|e| format!("Failed to check for fnm update: {}", e))?;
 
     if !response.status().is_success() {
-        return None;
+        return Ok(None);
     }
 
-    let release: GitHubRelease = response.json().await.ok()?;
+    let release: GitHubRelease = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse fnm update response: {}", e))?;
 
     let latest = release
         .tag_name
@@ -90,13 +100,13 @@ pub async fn check_for_fnm_update(current_version: &str) -> Option<FnmUpdate> {
     let current = current_version.strip_prefix('v').unwrap_or(current_version);
 
     if is_newer_version(latest, current) {
-        Some(FnmUpdate {
+        Ok(Some(FnmUpdate {
             current_version: current.to_string(),
             latest_version: latest.to_string(),
             release_url: release.html_url,
-        })
+        }))
     } else {
-        None
+        Ok(None)
     }
 }
 

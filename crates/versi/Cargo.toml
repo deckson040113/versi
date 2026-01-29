@@ -19,6 +19,7 @@ tray-icon = "0.21.3"
 image = { version = "0.25.9", default-features = false, features = ["png"] }
 dark-light = "2.0"
 
+reqwest.workspace = true
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

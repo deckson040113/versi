@@ -1,10 +1,10 @@
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const SCHEDULE_URL: &str = "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json";
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct VersionSchedule {
     pub start: String,
     #[serde(default)]
@@ -16,7 +16,7 @@ pub struct VersionSchedule {
     pub codename: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReleaseSchedule {
     pub versions: HashMap<u32, VersionSchedule>,
 }
@@ -65,8 +65,10 @@ impl ReleaseSchedule {
     }
 }
 
-pub async fn fetch_release_schedule() -> Result<ReleaseSchedule, String> {
-    let response = reqwest::get(SCHEDULE_URL)
+pub async fn fetch_release_schedule(client: &reqwest::Client) -> Result<ReleaseSchedule, String> {
+    let response = client
+        .get(SCHEDULE_URL)
+        .send()
         .await
         .map_err(|e| format!("Failed to fetch release schedule: {}", e))?;
 

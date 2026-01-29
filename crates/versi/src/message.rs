@@ -128,13 +128,15 @@ pub enum Message {
     WindowOpened(iced::window::Id),
 
     CheckForAppUpdate,
-    AppUpdateChecked(Option<AppUpdate>),
+    AppUpdateChecked(Result<Option<AppUpdate>, String>),
     OpenAppUpdate,
     DismissAppUpdate,
 
     CheckForFnmUpdate,
-    FnmUpdateChecked(Option<FnmUpdate>),
+    FnmUpdateChecked(Result<Option<FnmUpdate>, String>),
     OpenFnmUpdate,
+
+    FetchReleaseSchedule,
 
     OpenLink(String),
     WindowGeometrySaved,

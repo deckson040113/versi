@@ -4,7 +4,7 @@ use iced::{Alignment, Element, Length};
 use crate::icon;
 use crate::message::Message;
 use crate::settings::AppSettings;
-use crate::state::{MainState, Modal, Operation, QueuedOperation};
+use crate::state::{MainState, Modal, NetworkStatus, Operation, QueuedOperation};
 use crate::theme::styles;
 use crate::widgets::{toast_container, version_list};
 
@@ -203,6 +203,63 @@ fn contextual_banners<'a>(state: &'a MainState) -> Option<Element<'a, Message>> 
     let remote = &state.available_versions.versions;
 
     let mut banners: Vec<Element<Message>> = Vec::new();
+
+    match state.available_versions.network_status() {
+        NetworkStatus::Offline(_) => {
+            banners.push(
+                button(
+                    row![
+                        text("Could not load available versions").size(13),
+                        Space::new().width(Length::Fill),
+                        text("Retry").size(13),
+                    ]
+                    .align_y(Alignment::Center),
+                )
+                .on_press(Message::FetchRemoteVersions)
+                .style(styles::banner_button_warning)
+                .padding([12, 16])
+                .width(Length::Fill)
+                .into(),
+            );
+        }
+        NetworkStatus::Stale(_) => {
+            banners.push(
+                button(
+                    row![
+                        text("Using cached data \u{2014} could not refresh from network").size(13),
+                        Space::new().width(Length::Fill),
+                        text("Retry").size(13),
+                    ]
+                    .align_y(Alignment::Center),
+                )
+                .on_press(Message::FetchRemoteVersions)
+                .style(styles::banner_button_warning)
+                .padding([12, 16])
+                .width(Length::Fill)
+                .into(),
+            );
+        }
+        _ => {}
+    }
+
+    if state.available_versions.schedule_error.is_some() && schedule.is_none() {
+        banners.push(
+            button(
+                row![
+                    text("Release schedule unavailable \u{2014} EOL detection may be inaccurate")
+                        .size(13),
+                    Space::new().width(Length::Fill),
+                    text("Retry").size(13),
+                ]
+                .align_y(Alignment::Center),
+            )
+            .on_press(Message::FetchReleaseSchedule)
+            .style(styles::banner_button_warning)
+            .padding([12, 16])
+            .width(Length::Fill)
+            .into(),
+        );
+    }
 
     let update_count = {
         let mut latest_by_major: std::collections::HashMap<u32, &versi_core::NodeVersion> =
