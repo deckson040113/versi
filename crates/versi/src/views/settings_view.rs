@@ -1,6 +1,7 @@
 use iced::widget::{Space, button, column, row, scrollable, text, toggler, tooltip};
 use iced::{Alignment, Element, Length};
 
+use crate::icon;
 use crate::message::Message;
 use crate::settings::{AppSettings, ThemeSetting, TrayBehavior};
 use crate::state::{MainState, SettingsModalState, ShellVerificationStatus};
@@ -13,7 +14,7 @@ pub fn view<'a>(
 ) -> Element<'a, Message> {
     let header = row![
         tooltip(
-            button(text("\u{2190}").size(16))
+            button(icon::arrow_left(16.0))
                 .on_press(Message::NavigateToVersions)
                 .style(styles::ghost_button)
                 .padding([4, 8]),
@@ -149,9 +150,11 @@ pub fn view<'a>(
         content = content.push(text("No shells detected").size(12));
     } else {
         for shell in &settings_state.shell_statuses {
+            let is_configured_check = matches!(shell.status, ShellVerificationStatus::Configured);
+
             let status_text = match &shell.status {
                 ShellVerificationStatus::Unknown => "Unknown",
-                ShellVerificationStatus::Configured => "Configured \u{2713}",
+                ShellVerificationStatus::Configured => "Configured",
                 ShellVerificationStatus::NotConfigured => "Not configured",
                 ShellVerificationStatus::NoConfigFile => "No config file",
                 ShellVerificationStatus::FunctionalButNotInConfig => "Working (not in config)",
@@ -172,12 +175,23 @@ pub fn view<'a>(
                     text("Configuring...").size(12),
                 ]
             } else if is_configured {
-                row![
+                let mut r = row![
                     text(&shell.shell_name).size(13).width(Length::Fixed(100.0)),
                     text(status_text)
                         .size(12)
                         .color(iced::Color::from_rgb8(52, 199, 89)),
                 ]
+                .spacing(8)
+                .align_y(Alignment::Center);
+                if is_configured_check {
+                    let check_icon: Element<'_, Message> = icon::check(12.0)
+                        .style(|_theme: &iced::Theme, _status| iced::widget::svg::Style {
+                            color: Some(iced::Color::from_rgb8(52, 199, 89)),
+                        })
+                        .into();
+                    r = r.push(check_icon);
+                }
+                r
             } else if has_no_config_file {
                 row![
                     text(&shell.shell_name).size(13).width(Length::Fixed(100.0)),

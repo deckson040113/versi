@@ -1,6 +1,7 @@
 use iced::widget::{Space, button, column, container, mouse_area, row, text, text_input, tooltip};
 use iced::{Alignment, Element, Length};
 
+use crate::icon;
 use crate::message::Message;
 use crate::settings::AppSettings;
 use crate::state::{MainState, Modal, Operation, QueuedOperation};
@@ -93,8 +94,15 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     if let Some(update) = &state.app_update {
         icon_row = icon_row.push(
             button(
-                container(text(format!("v{} available \u{2197}", update.latest_version)).size(11))
-                    .padding([2, 8]),
+                container(
+                    row![
+                        text(format!("v{} available", update.latest_version)).size(11),
+                        icon::arrow_up_right(11.0),
+                    ]
+                    .spacing(2)
+                    .align_y(Alignment::Center),
+                )
+                .padding([2, 8]),
             )
             .on_press(Message::OpenAppUpdate)
             .style(styles::app_update_button)
@@ -106,7 +114,12 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
         icon_row = icon_row.push(
             button(
                 container(
-                    text(format!("fnm {} available \u{2197}", update.latest_version)).size(11),
+                    row![
+                        text(format!("fnm {} available", update.latest_version)).size(11),
+                        icon::arrow_up_right(11.0),
+                    ]
+                    .spacing(2)
+                    .align_y(Alignment::Center),
                 )
                 .padding([2, 8]),
             )
@@ -117,7 +130,7 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     }
 
     icon_row = icon_row.push(tooltip(
-        button(text("\u{21bb}").size(16))
+        button(icon::refresh(16.0))
             .on_press(Message::RefreshEnvironment)
             .style(styles::ghost_button)
             .padding([6, 8]),
@@ -126,7 +139,7 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     ));
 
     icon_row = icon_row.push(tooltip(
-        button(text("\u{2699}").size(16))
+        button(icon::settings(16.0))
             .on_press(Message::NavigateToSettings)
             .style(styles::ghost_button)
             .padding([6, 8]),
@@ -135,7 +148,7 @@ fn header_view<'a>(state: &'a MainState) -> Element<'a, Message> {
     ));
 
     icon_row = icon_row.push(tooltip(
-        button(text("\u{24d8}").size(16))
+        button(icon::info(16.0))
             .on_press(Message::NavigateToAbout)
             .style(styles::ghost_button)
             .padding([6, 8]),
@@ -162,7 +175,7 @@ fn search_bar_view<'a>(state: &'a MainState) -> Element<'a, Message> {
         Space::new().into()
     } else {
         tooltip(
-            button(text("\u{2715}").size(14))
+            button(icon::close(14.0))
                 .on_press(Message::SearchChanged(String::new()))
                 .style(styles::ghost_button)
                 .padding([6, 10]),
@@ -393,7 +406,7 @@ fn queued_operation_view(queued: &QueuedOperation) -> Element<'_, Message> {
     row![
         text(queued.request.description()).size(12),
         Space::new().width(Length::Fill),
-        button(text("×").size(12))
+        button(icon::close(12.0))
             .on_press(Message::CancelQueuedOperation(queued.id))
             .style(styles::ghost_button)
             .padding([2, 6]),

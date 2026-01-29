@@ -1,6 +1,7 @@
 use iced::widget::{button, column, container, row, text};
 use iced::{Alignment, Element, Length};
 
+use crate::icon;
 use crate::message::Message;
 use crate::state::{Toast, ToastStatus};
 
@@ -76,8 +77,13 @@ fn toast_view<'a>(toast: &'a Toast) -> Element<'a, Message> {
         );
     }
 
+    let close_icon: Element<'_, Message> = icon::close(14.0)
+        .style(|_theme: &iced::Theme, _status| iced::widget::svg::Style {
+            color: Some(iced::Color::WHITE),
+        })
+        .into();
     content = content.push(
-        button(text("×").size(14))
+        button(close_icon)
             .on_press(Message::ToastDismiss(toast.id))
             .style(|_theme, _status| iced::widget::button::Style {
                 background: Some(iced::Background::Color(iced::Color::TRANSPARENT)),

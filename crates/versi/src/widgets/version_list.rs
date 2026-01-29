@@ -5,6 +5,7 @@ use iced::{Alignment, Element, Length};
 
 use versi_core::{InstalledVersion, NodeVersion, ReleaseSchedule, RemoteVersion, VersionGroup};
 
+use crate::icon;
 use crate::message::Message;
 use crate::state::{EnvironmentState, OperationQueue};
 use crate::theme::styles;
@@ -245,8 +246,14 @@ fn version_group_view<'a>(
         .any(|v| default.as_ref().map(|d| d == &v.version).unwrap_or(false));
     let is_eol = schedule.map(|s| !s.is_active(group.major)).unwrap_or(false);
 
+    let chevron = if group.is_expanded {
+        icon::chevron_down(12.0)
+    } else {
+        icon::chevron_right(12.0)
+    };
+
     let mut header_row = row![
-        text(if group.is_expanded { "▼" } else { "▶" }).size(12),
+        chevron,
         text(format!("Node {}.x", group.major)).size(16),
         text(format!("({} installed)", group.versions.len())).size(12),
     ]
@@ -439,14 +446,18 @@ fn version_item_view<'a>(
 
     if show_actions {
         row_content = row_content.push(
-            button(text("Changelog \u{2197}").size(11))
-                .on_press(Message::OpenChangelog(version_for_changelog))
-                .style(action_style)
-                .padding([4, 8]),
+            button(
+                row![text("Changelog").size(11), icon::arrow_up_right(11.0),]
+                    .spacing(2)
+                    .align_y(Alignment::Center),
+            )
+            .on_press(Message::OpenChangelog(version_for_changelog))
+            .style(action_style)
+            .padding([4, 8]),
         );
     } else {
         row_content = row_content.push(
-            button(text("Changelog \u{2197}").size(11))
+            button(text("Changelog").size(11))
                 .style(action_style)
                 .padding([4, 8]),
         );
@@ -545,10 +556,14 @@ fn available_version_row<'a>(
             container(Space::new())
         },
         Space::new().width(Length::Fill),
-        button(text("Changelog \u{2197}").size(11))
-            .on_press(Message::OpenChangelog(version_for_changelog))
-            .style(styles::ghost_button)
-            .padding([4, 8]),
+        button(
+            row![text("Changelog").size(11), icon::arrow_up_right(11.0),]
+                .spacing(2)
+                .align_y(Alignment::Center),
+        )
+        .on_press(Message::OpenChangelog(version_for_changelog))
+        .style(styles::ghost_button)
+        .padding([4, 8]),
         install_button,
     ]
     .spacing(8)

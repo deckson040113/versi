@@ -3,6 +3,7 @@
 use iced::window;
 
 mod app;
+mod icon;
 mod logging;
 mod message;
 mod settings;
