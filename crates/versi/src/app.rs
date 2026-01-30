@@ -1049,13 +1049,8 @@ impl FnmUi {
         if let AppState::Main(state) = &mut self.state {
             state.operation_queue.remove_completed_install(&version);
 
-            let toast_id = state.next_toast_id();
-            if success {
-                state.add_toast(Toast::success(
-                    toast_id,
-                    format!("Node {} installed successfully", version),
-                ));
-            } else {
+            if !success {
+                let toast_id = state.next_toast_id();
                 state.add_toast(Toast::error(
                     toast_id,
                     format!(
