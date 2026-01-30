@@ -204,9 +204,13 @@ pub fn view<'a>(
         .into();
     }
 
-    scrollable(column(content_items).spacing(12).padding([0, 4]))
-        .height(Length::Fill)
-        .into()
+    scrollable(
+        column(content_items)
+            .spacing(12)
+            .padding(iced::Padding::new(0.0).right(32.0)),
+    )
+    .height(Length::Fill)
+    .into()
 }
 
 fn filter_group(group: &VersionGroup, query: &str) -> bool {

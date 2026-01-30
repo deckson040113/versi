@@ -1,4 +1,4 @@
-use iced::widget::{Space, button, column, row, scrollable, text, toggler, tooltip};
+use iced::widget::{Space, button, column, container, row, scrollable, text, toggler, tooltip};
 use iced::{Alignment, Element, Length};
 
 use crate::icon;
@@ -272,12 +272,12 @@ pub fn view<'a>(
         .spacing(8),
     );
     column![
-        header,
+        container(header).padding(iced::Padding::new(0.0).right(32.0)),
         Space::new().height(24),
-        scrollable(content.padding(iced::Padding::default().right(12))).height(Length::Fill),
+        scrollable(content.padding(iced::Padding::default().right(32.0))).height(Length::Fill),
     ]
     .spacing(0)
-    .padding(32)
+    .padding(iced::Padding::new(32.0).right(0.0))
     .width(Length::Fill)
     .height(Length::Fill)
     .into()
